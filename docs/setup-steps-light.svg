@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="200" viewBox="0 0 960 200" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="960" height="200" rx="16" fill="#ffffff"/>
+  <line x1="120" y1="58" x2="840" y2="58" stroke="#e2e8f0" stroke-width="3"/>
+  <circle cx="120" cy="58" r="22" fill="#2563eb"/>
+  <text x="120" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">1</text>
+  <text x="120" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Get the skill</text>
+  <text x="120" y="138" text-anchor="middle" font-size="13" fill="#64748b">One git clone into</text>
+  <text x="120" y="158" text-anchor="middle" font-size="13" fill="#64748b">your skills folder.</text>
+  <circle cx="360" cy="58" r="22" fill="#2563eb"/>
+  <text x="360" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">2</text>
+  <text x="360" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Turn on Astro's MCP</text>
+  <text x="360" y="138" text-anchor="middle" font-size="13" fill="#64748b">Astro → Settings →</text>
+  <text x="360" y="158" text-anchor="middle" font-size="13" fill="#64748b">MCP Server → Enable.</text>
+  <circle cx="600" cy="58" r="22" fill="#2563eb"/>
+  <text x="600" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">3</text>
+  <text x="600" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Connect</text>
+  <text x="600" y="138" text-anchor="middle" font-size="13" fill="#64748b">Run  aso setup</text>
+  <text x="600" y="158" text-anchor="middle" font-size="13" fill="#64748b">It says: OK — Astro answered.</text>
+  <circle cx="840" cy="58" r="22" fill="#2563eb"/>
+  <text x="840" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">4</text>
+  <text x="840" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Type  /</text>
+  <text x="840" y="138" text-anchor="middle" font-size="13" fill="#64748b">Open Claude Code, type /,</text>
+  <text x="840" y="158" text-anchor="middle" font-size="13" fill="#64748b">pick aso-keywords. Done.</text>
+</svg>

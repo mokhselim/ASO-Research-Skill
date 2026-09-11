@@ -1,0 +1,6 @@
+projects/
+*.bak
+__pycache__/
+*.pyc
+.DS_Store
+astro.json

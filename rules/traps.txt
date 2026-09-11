@@ -1,0 +1,10 @@
+# Confirmed intent traps — terms whose top-5 results contradict what the score suggests.
+#
+# This file ships EMPTY on purpose. Traps are found empirically, one storefront at a
+# time, and they are specific to a category and a market. Record yours here as you find
+# them so the same term is never re-proposed.
+#
+# format:  term | stores | what the top-5 actually returns
+#
+# Example of the format (delete these, they are placeholders):
+# example term | us,gb | resolves to a different category than the score implies

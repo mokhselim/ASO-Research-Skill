@@ -1,0 +1,12 @@
+# Competitor and company names — never to be used in a title, subtitle or keyword field.
+#
+# This file ships EMPTY on purpose. Fill it with the rival brands in YOUR category.
+# A brand can be the cheapest, highest-popularity term in a store and still be the
+# wrong thing to ship: rival names are research signal, not metadata.
+#
+# One name per line, lowercase. Matched as a substring, so keep entries specific —
+# a short prefix will swallow ordinary phrases that merely start the same way.
+#
+# Example of the format (delete these, they are placeholders):
+# acme translate
+# examplebrand

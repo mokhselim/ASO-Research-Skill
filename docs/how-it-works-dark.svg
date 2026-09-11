@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="960" height="330" rx="16" fill="#0d1117"/>
+
+  <!-- panel 1: you type -->
+  <rect x="24" y="24" width="270" height="282" rx="12" fill="#161b22" stroke="#30363d"/>
+  <text x="44" y="56" font-size="12" font-weight="700" fill="#8b949e" letter-spacing="1.5">YOU TYPE</text>
+  <rect x="44" y="76" width="230" height="86" rx="8" fill="#010409"/>
+  <text x="58" y="104" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#58a6ff">/aso-keywords</text>
+  <text x="58" y="126" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">research this:</text>
+  <text x="58" y="146" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">bird identifier, bird song</text>
+  <text x="44" y="196" font-size="13" fill="#e6edf3">One line in Claude Code chat.</text>
+  <text x="44" y="216" font-size="13" fill="#8b949e">Claude asks for anything it still</text>
+  <text x="44" y="234" font-size="13" fill="#8b949e">needs — your app name, what</text>
+  <text x="44" y="252" font-size="13" fill="#8b949e">counts as on-topic — then runs</text>
+  <text x="44" y="270" font-size="13" fill="#8b949e">the whole pipeline itself.</text>
+
+  <!-- arrow -->
+  <path d="M302 165 L338 165" stroke="#484f58" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M331 158 L339 165 L331 172" stroke="#484f58" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- panel 2: claude researches -->
+  <rect x="346" y="24" width="300" height="282" rx="12" fill="#161b22" stroke="#30363d"/>
+  <text x="366" y="56" font-size="12" font-weight="700" fill="#8b949e" letter-spacing="1.5">CLAUDE RESEARCHES</text>
+  <g font-size="13" fill="#e6edf3">
+    <circle cx="380" cy="86" r="11" fill="#1f3a5f"/><text x="380" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">1</text>
+    <text x="400" y="90">Test your words in the US store</text>
+    <circle cx="380" cy="122" r="11" fill="#1f3a5f"/><text x="380" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">2</text>
+    <text x="400" y="126">Mine what competitors rank for</text>
+    <circle cx="380" cy="158" r="11" fill="#1f3a5f"/><text x="380" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">3</text>
+    <text x="400" y="162">Find local winners per country</text>
+    <text x="400" y="178" font-size="11" fill="#8b949e">their words, not a translation of yours</text>
+    <circle cx="380" cy="208" r="11" fill="#1f3a5f"/><text x="380" y="212" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">4</text>
+    <text x="400" y="212">Score by how cheaply you can rank</text>
+    <circle cx="380" cy="244" r="11" fill="#1f3a5f"/><text x="380" y="248" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">5</text>
+    <text x="400" y="248">Build the fields, OLD vs NEW</text>
+  </g>
+  <text x="366" y="288" font-size="11" fill="#8b949e">Results go to files, not into the chat.</text>
+
+  <!-- arrow -->
+  <path d="M654 165 L690 165" stroke="#484f58" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M683 158 L691 165 L683 172" stroke="#484f58" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- panel 3: you get -->
+  <rect x="698" y="24" width="238" height="282" rx="12" fill="#161b22" stroke="#30363d"/>
+  <text x="718" y="56" font-size="12" font-weight="700" fill="#8b949e" letter-spacing="1.5">YOU GET</text>
+  <g font-size="12">
+    <text x="718" y="86" fill="#8b949e">Title</text>
+    <rect x="718" y="94" width="198" height="26" rx="6" fill="#0d1117" stroke="#30363d"/>
+    <text x="728" y="112" fill="#e6edf3" font-weight="600">BirdLens: Bird Identifier</text>
+    <text x="718" y="146" fill="#8b949e">Subtitle</text>
+    <rect x="718" y="154" width="198" height="26" rx="6" fill="#0d1117" stroke="#30363d"/>
+    <text x="728" y="172" fill="#e6edf3" font-weight="600">Sound ID, Nests &amp; Feeder Log</text>
+    <text x="718" y="206" fill="#8b949e">Keywords · 92 / 100</text>
+    <rect x="718" y="214" width="198" height="48" rx="6" fill="#0d1117" stroke="#30363d"/>
+    <text x="728" y="232" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">watch,birding,species,chirp,</text>
+    <text x="728" y="250" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">song,call,spot,scan,wild,…</text>
+  </g>
+  <rect x="718" y="274" width="198" height="22" rx="11" fill="#1a3a26"/>
+  <text x="817" y="289" text-anchor="middle" font-size="11" font-weight="600" fill="#3fb950">per country, per locale</text>
+</svg>

@@ -1,0 +1,12 @@
+# POSITIVE relevance stems — legacy global fallback. Ships EMPTY, and stays empty.
+#
+# Relevance is PER PROJECT: set `relevance_stems` in projects/<slug>/config.json, via
+# `aso init --relevance "..."`. init refuses to run without them and relevant() fails
+# closed when they are missing, so this file is not consulted for a real project.
+#
+# Why positive stems rather than a blocklist: a blocklist can never enumerate every
+# irrelevant app in every market. Relevance has to be proven. Anything that does not
+# match is handed to the human as "unverified" rather than let in silently.
+#
+# Write the stems as every way your category is spelled, in every language you intend
+# to research — one alternation group per line, regex `|` between alternatives.

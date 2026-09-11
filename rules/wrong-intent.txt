@@ -1,0 +1,12 @@
+# Terms that look cheap but belong to a DIFFERENT app category.
+#
+# This file ships EMPTY on purpose. These verdicts are category-specific and app-
+# specific: a word that is off-topic for one app is the core term for another. Build
+# your own list as you research, and confirm every entry by reading the top-5 results
+# for that term — never by the difficulty score alone.
+#
+# format:  term | why
+#
+# Example of the format (delete these, they are placeholders):
+# example term        | what the top-5 actually returns
+# 例                  | non-Latin entries are matched as substrings, not word-bounded

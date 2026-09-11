@@ -1,0 +1,634 @@
+#!/usr/bin/env python3
+"""aso — App Store keyword research pipeline.
+Phases:  init → seed (US) → expand (all stores) → rank → propose → report → push
+Every command writes files and prints a SHORT summary. Raw data never goes to the model.
+"""
+import json,os,re,sys,argparse,datetime
+for _stream in (sys.stdout,sys.stderr):        # Windows consoles default to a legacy
+    try: _stream.reconfigure(encoding='utf-8')  # code page that cannot print 野鳥 or é
+    except Exception: pass
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import core
+SKILL=core.SKILL
+PROJ=os.path.join(SKILL,'projects')
+
+def pdir(slug): return os.path.join(PROJ,slug)
+def cfg(slug):
+    c=json.load(open(os.path.join(pdir(slug),'config.json'),encoding='utf-8'))
+    core.load_relevance(c.get('relevance_stems') or [])   # relevance is PER PROJECT
+    core.load_app_terms(c.get('app_terms') or [])
+    core.load_allow_terms(c.get('allow_terms') or [])
+    return c
+def save(slug,name,obj):
+    os.makedirs(pdir(slug),exist_ok=True)
+    json.dump(obj,open(os.path.join(pdir(slug),name),'w',encoding='utf-8'),ensure_ascii=False,indent=1)
+
+ASTRO_DEFAULT='http://127.0.0.1:8089/mcp'   # Astro's documented default: tryastro.app/docs/mcp
+
+def cmd_setup(a):
+    """One-time: record where the user's Astro MCP server is, then prove we can talk to it.
+    With no --astro-url and nothing configured yet, try Astro's documented default first."""
+    url=a.astro_url.strip() if a.astro_url else None
+    if not url and not core.astro_url():
+        print(f"no address given — trying Astro's default {ASTRO_DEFAULT} …")
+        url=ASTRO_DEFAULT
+    if url or a.timeout:
+        cfg={}
+        try: cfg=json.load(open(core.ASTRO_CONFIG,encoding='utf-8'))
+        except (OSError,ValueError): pass
+        if url: cfg['url']=url
+        if a.timeout: cfg['timeout']=a.timeout
+        json.dump(cfg,open(core.ASTRO_CONFIG,'w',encoding='utf-8'),indent=1)
+    url=core.astro_url()
+    src='ASTRO_URL env' if os.environ.get('ASTRO_URL') else 'astro.json'
+    print(f"Astro: {url}  ({src}, timeout {core.astro_timeout()}s)")
+    d,err=core._astro_once('list_apps',{})
+    if d is None:
+        print(f"  !! {err}")
+        print("  Open Astro -> Settings -> MCP Server, turn on 'Enable MCP Server', then run setup again.")
+        print("  If the address shown there is different, run:  aso setup --astro-url <that address>")
+        raise SystemExit(1)
+    apps=d if isinstance(d,list) else (d.get('apps') if isinstance(d,dict) else None)
+    n=len(apps) if isinstance(apps,list) else '?'
+    print(f"  OK — Astro answered, {n} app(s) in its workspace. You're set up.")
+
+def cmd_init(a):
+    if not a.relevance:
+        print("REFUSING: --relevance is required.\n"
+              "  These are the stems a term MUST contain to count as on-topic for THIS app.\n"
+              "  a bird app -> bird,birding,vogel,oiseau,野鳥,새,…\n"
+              "  a tuner    -> tune,tuner,pitch,chord,stimmgerät,調律,…\n"
+              "  Without them the filter cannot tell a messaging app from a real term.")
+        raise SystemExit(1)
+    os.makedirs(pdir(a.slug),exist_ok=True)
+    astro_app=a.astro_app
+    if a.create:
+        # Astro has NO delete-app tool — creation is permanent. Opt-in only.
+        args={'platform':'iphone'}
+        if a.appstore_id: args['appStoreId']=str(a.appstore_id)
+        else: args['temporary']=True; args['name']=a.name or f'{a.slug} (research)'
+        r=core.astro('add_app',args)
+        print(f"  add_app -> {json.dumps(r,ensure_ascii=False)[:200] if r else 'FAILED'}")
+        got=None
+        if isinstance(r,dict):
+            # add_app returns the new app's id under 'appStoreId' (internal id for
+            # temporary apps, the real store id when --appstore-id was given).
+            got=(r.get('appId') or r.get('id') or r.get('appStoreId')
+                 or (r.get('app') or {}).get('appId'))
+        if got: astro_app=str(got); print(f"  created Astro app id {astro_app}")
+        else:
+            # Fall back to name match — NEVER max(appId): real store ids are 10 digits
+            # and would always beat the internal ids Astro assigns research apps.
+            lst=core.astro('list_apps',{})
+            apps=lst if isinstance(lst,list) else (lst or {}).get('apps',[])
+            want=(a.name or f'{a.slug} (research)').strip().lower()
+            hit=next((z for z in apps if str(z.get('name','')).strip().lower()==want),None)
+            if hit:
+                astro_app=str(hit.get('appId'))
+                print(f"  resolved via list_apps -> {astro_app} ({hit.get('name')})")
+            else:
+                print("  !! could not resolve the new Astro app id — set astro_app in config.json by hand")
+    c={'slug':a.slug,'astro_app':astro_app,'asc_app':a.asc_app or '',
+       'relevance_stems':[x.strip() for x in a.relevance.split(',') if x.strip()],
+       'category_words':a.category.split(',') if a.category else [],
+       'seeds':a.seeds.split(',') if a.seeds else [],
+       'stores':[],'created':str(datetime.date.today())}
+    save(a.slug,'config.json',c)
+    print(f"project '{a.slug}' created  (astro app {astro_app})")
+    print(f"  category words: {c['category_words'] or '— set with --category, used to detect intent traps'}")
+    print(f"  next: aso seed {a.slug}   (pushes your seed keywords to the US store and shows the pool)")
+
+def cmd_seed(a):
+    """Push the seed keywords to the US store and show the pool. Seeds come from
+    --add OR from config (init --seeds) — the user's opening keywords start the search.
+    User-given seeds are never filtered: they are tested as-is against real popularity."""
+    c=cfg(a.slug); app=c['astro_app']
+    p=core.pool(app,'us')
+    todo=[t.strip() for t in (a.add.split(',') if a.add else (c.get('seeds') or [])) if t.strip()]
+    new=[t for t in todo if t.lower() not in p]
+    if new:
+        n,unres=core.add(app,'us',new)
+        print(f"pushed {n} seed keyword(s) to us: {', '.join(new)}")
+        if unres: print(f"  ! {len(unres)} seed(s) NOT scored by Astro (retry): {', '.join(unres)}")
+        p=core.pool(app,'us')
+    elif todo:
+        print(f"{len(todo)} seed(s) already in the us pool — nothing to push")
+    if todo:
+        c['seeds']=list(dict.fromkeys((c.get('seeds') or [])+todo)); save(a.slug,'config.json',c)
+    rows=[]
+    unver=[]
+    for t,(pop,d) in p.items():
+        if pop<=5 or core.classify(t,'en-US'): continue
+        (rows if core.relevant(t) else unver).append((pop,d,t))
+    unver.sort(reverse=True)
+    rows.sort(reverse=True)
+    save(a.slug,'pool_us.json',{t:[pop,d] for pop,d,t in rows})
+    print(f"US pool {len(p)} → {len(rows)} clean (pop>5, no brands/wrong-intent)")
+    for pop,d,t in rows[:15]: print(f"   {pop:>3}/{d:<3} {t}")
+    if len(rows)>15: print(f"   … {len(rows)-15} more in pool_us.json")
+    if unver:
+        print(f"\n  ❓ {len(unver)} UNVERIFIED — off-category or need your call:")
+        for pop,d,t in unver[:12]: print(f"     {pop:>3}/{d:<3} {t}")
+    # The user's own seeds are never silently dropped: report the verdict on each one
+    # that did not make the clean pool, so a blocklist false-positive is visible.
+    seeds=[t.strip().lower() for t in (c.get('seeds') or []) if t.strip()]
+    dead=[]
+    for s in seeds:
+        if s not in p or any(s==t.lower() for _,_,t in rows): continue
+        pop,d=p[s]
+        dead.append((s,pop,d,'pop≤5 — no real search volume' if pop<=5
+                     else (core.classify(s,'en-US') or 'off-category')))
+    if dead:
+        print(f"\n  ✗ {len(dead)} of your seeds did NOT make the pool:")
+        for s,pop,d,why in dead: print(f"     {pop:>3}/{d:<3} {s:<24} {why}")
+    print(f"  next: aso expand {a.slug} --stores <cc,cc,…>")
+
+def cmd_expand(a):
+    c=cfg(a.slug); app=c['astro_app']
+    stores=a.stores.split(',')
+    out=_load(a.slug,'pools.json')   # merge: never drop stores expanded in an earlier run
+    for s in stores:
+        if a.add:
+            _n,_unres=core.add(app,s,a.add.split(','))
+            if _unres: print(f"  ! {s}: {len(_unres)} term(s) NOT scored by Astro (retry)")
+        p=core.pool(app,s)
+        keep={t:[pop,d] for t,(pop,d) in p.items() if pop>5}
+        out[s]={'raw':len(p),'kept':len(keep),'terms':keep}
+        print(f"  {s:<4} pool {len(p):>4} → {len(keep):>3} above 5")
+    c['stores']=sorted(set(c['stores'])|set(stores)); save(a.slug,'config.json',c)
+    save(a.slug,'pools.json',out)
+    tot=sum(v['kept'] for v in out.values())
+    print(f"{len(stores)} stores · {tot} terms above 5 → pools.json")
+    print(f"  next: aso rank {a.slug} --store <cc>")
+
+def cmd_rank(a):
+    c=cfg(a.slug); pools=json.load(open(os.path.join(pdir(a.slug),'pools.json'),encoding='utf-8'))
+    s=a.store; loc=a.locale
+    terms=pools[s]['terms']
+    cand=[]; _x=_excl(a.slug)
+    for t,(pop,d) in terms.items():
+        why=core.classify(t,loc)
+        if why or pop<=a.min_pop or len(t)>36 or t in _x: continue
+        cand.append((pop,d,t))
+    cand.sort(reverse=True)
+    cand=cand[:a.top]
+    print(f"{s}: {len(terms)} terms above 5 → checking title-gap on top {len(cand)}")
+    scored=[]
+    for pop,d,t in cand:
+        owners,top5=core.title_gap(t,s)
+        scored.append({'term':t,'pop':pop,'diff':d,'owners':len(owners),
+                       'score':core.gap_score(pop,d,len(owners)),'top5':top5,
+                       'owner_names':[n for _,n in owners[:2]]})
+    scored.sort(key=lambda x:-x['score'])
+    save(a.slug,f'rank_{s}.json',scored)
+    cw=[w.lower() for w in c.get('category_words',[])]
+    print(f"\n{'score':>6} {'pop':>4} {'diff':>5} {'own':>4}  term")
+    for r in scored:
+        flag=''
+        if cw and not any(w in ' '.join(r['top5']).lower() for w in cw):
+            flag='  ⚠ TRAP? top-5: '+', '.join(r['top5'][:3])
+        tier='🟢' if r['owners']==0 else ('🟡' if r['owners']<=2 else '🔴')
+        print(f"{r['score']:>6} {r['pop']:>4} {r['diff']:>5} {tier}{r['owners']:>2}  {r['term']}{flag}")
+    print(f"\n  → rank_{s}.json   next: aso propose {a.slug} --store {s} --locale {loc}")
+
+def cmd_check(a):
+    """Validate a proposed title/subtitle/keywords against every hard rule."""
+    c=cfg(a.slug)
+    name,sub,kw=a.name,a.subtitle,a.keywords
+    print(f"T ({len(name):>3}/30) {'OK ' if len(name)<=30 else 'OVER'}  {name}")
+    print(f"S ({len(sub):>3}/30) {'OK ' if len(sub)<=30 else 'OVER'}  {sub}")
+    print(f"K ({len(kw):>3}/100) {'OK ' if len(kw)<=100 else 'OVER'}  {kw}")
+    d=core.dupes(name,sub,kw)
+    waste=sum((n-1)*(len(t)+1) for t,n in d.items())
+    print(f"duplicate tokens: {d or 'NONE'}" + (f"  → {waste} ch wasted" if d else ""))
+    bad=[t for t in kw.split(',') if core.classify(t,a.locale)]
+    print(f"rule violations : {[(t,core.classify(t,a.locale)) for t in bad] or 'NONE'}")
+    try:
+        pools=json.load(open(os.path.join(pdir(a.slug),'pools.json'),encoding='utf-8'))
+        terms=pools[a.store]['terms']
+        got=[(t,v[0]) for t,v in terms.items() if not core.classify(t,a.locale) and core.covered(t,name,sub,kw)]
+        miss=[(t,v[0]) for t,v in terms.items() if not core.classify(t,a.locale) and not core.covered(t,name,sub,kw)]
+        tot=sum(p for _,p in got)+sum(p for _,p in miss)
+        print(f"coverage        : {len(got)}/{len(got)+len(miss)} clean terms · {sum(p for _,p in got)}/{tot} popularity")
+        if miss: print(f"  missed: {', '.join(f'{t} {p}' for t,p in sorted(miss,key=lambda x:-x[1])[:6])}")
+    except Exception as e:
+        print(f"coverage        : (run expand first)")
+
+def _load(slug,name,default=None):
+    fp=os.path.join(pdir(slug),name)
+    return json.load(open(fp,encoding='utf-8')) if os.path.exists(fp) else (default if default is not None else {})
+
+def _seeds(slug,store):
+    c=cfg(slug); s=c.get('seeds') or []
+    p=_load(slug,'pools.json').get(store,{}).get('terms',{})
+    if not p: p=_load(slug,f'pool_{store}.json')
+    ranked=sorted(p.items(),key=lambda kv:-kv[1][0])
+    return list(dict.fromkeys(s+[t for t,_ in ranked[:12]]))
+
+def cmd_competitors(a):
+    """Phase 1 step 3 / Phase 2 step 7 — who ranks here, and who ranks here but NOT in the US."""
+    c=cfg(a.slug); store=a.store
+    seeds=(a.seeds.split(',') if a.seeds else _seeds(a.slug,store))
+    apps={}
+    for t in seeds[:a.seeds_max]:
+        for app in core.top_apps(t,store,a.top):
+            if not app['id']: continue
+            e=apps.setdefault(app['id'],dict(app,terms=[]))
+            e['terms'].append(t)
+    save(a.slug,f'competitors_{store}.json',apps)
+    print(f"{store}: {len(seeds[:a.seeds_max])} seeds → {len(apps)} distinct competitors (top {a.top} each)")
+    us=_load(a.slug,'competitors_us.json')
+    locals_=[v for k,v in apps.items() if us and k not in us]
+    ranked=sorted(apps.values(),key=lambda v:-len(v['terms']))
+    for v in ranked[:10]:
+        tag=' 🆕LOCAL' if us and v['id'] not in us else ''
+        print(f"   x{len(v['terms']):<2} {v['name'][:38]:<38} {v['dev'][:20]}{tag}")
+    if us:
+        print(f"\n   {len(locals_)} competitors rank in {store} but NOT in us — these are the local-winner leads")
+    print(f"  next: aso mine {a.slug} --store {store}")
+
+def cmd_mine(a):
+    """Competitor keyword extraction, per store: for each seed keyword, pull the
+    aggregate vocabulary of the apps ranking for it (Astro extract_competitors_keywords),
+    verify against real popularity, keep >5. Prefiltered — junk never reaches Astro.
+    --from-localwinners seeds with the LOCAL winners' own words (run localwinners first):
+    in a foreign store that extracts what THEIR competitor set indexes, not what yours does."""
+    c=cfg(a.slug); store=a.store; app=c['astro_app']
+    existing=set(core.pool(app,store))
+    if a.from_localwinners:
+        lw=_load(a.slug,f'localwinners_{store}.json',None)
+        if not lw:
+            print(f"no localwinners_{store}.json — run: aso localwinners {a.slug} --store {store}"); return
+        seeds=(lw.get('vocab') or [])[:a.seeds_max]
+        print(f"seeding from local winners' vocabulary: {', '.join(seeds)}")
+    else:
+        seeds=(a.seeds.split(',') if a.seeds else _seeds(a.slug,store))[:a.seeds_max]
+    harvest=[]
+    for t in seeds:
+        harvest += core.competitor_terms(t,store,app)
+    harvest=[h for h in dict.fromkeys(harvest)]
+    print(f"{store}: mined {len(harvest)} raw terms from competitors of {len(seeds)} seeds")
+    kept,dead,tried,unknown=core.verify_new(app,store,harvest,existing,a.locale,prefilter=True)
+    print(f"  {tried} unseen → added to Astro → {len(kept)} survived (pop>5), {len(dead)} dead")
+    _warn_unknown(unknown)
+    for t,(pop,d) in sorted(kept.items(),key=lambda kv:-kv[1][0])[:15]:
+        print(f"     {pop:>3}/{d:<3} {t}")
+    save(a.slug,f'mined_{store}.json',kept)
+    print(f"  next: aso related {a.slug} --store {store}")
+
+def cmd_related(a):
+    """Phase 1 step 2 — related / long-tail expansion around the seeds."""
+    c=cfg(a.slug); store=a.store; app=c['astro_app']
+    existing=set(core.pool(app,store))
+    seeds=(a.seeds.split(',') if a.seeds else _seeds(a.slug,store))[:a.seeds_max]
+    cands=[]
+    for t in seeds: cands += core.suggestions(t,store,c['astro_app'])
+    cands=[x for x in dict.fromkeys(cands)]
+    print(f"{store}: {len(cands)} related suggestions from {len(seeds)} seeds")
+    kept,dead,tried,unknown=core.verify_new(app,store,cands,existing,a.locale)
+    print(f"  {tried} unseen → {len(kept)} survived (pop>5), {len(dead)} dead")
+    _warn_unknown(unknown)
+    for t,(pop,d) in sorted(kept.items(),key=lambda kv:-kv[1][0])[:15]:
+        print(f"     {pop:>3}/{d:<3} {t}")
+    save(a.slug,f'related_{store}.json',kept)
+    print(f"  next: aso rank {a.slug} --store {store} --locale <loc>")
+
+def _warn_unknown(unknown):
+    """Astro failed to score these. They are UNKNOWN, not dead — reporting them as
+    pop<=5 turns an outage into a confident (and wrong) research conclusion."""
+    if not unknown: return
+    print(f"   ?? UNSCORED ({len(unknown)}) — Astro error, NOT dead. Re-run to retest:")
+    print(f"      {', '.join(unknown)}")
+
+def cmd_verify(a):
+    """Claude proposes native-language candidates; this checks them against reality."""
+    c=cfg(a.slug); store=a.store; app=c['astro_app']
+    cands=[x.strip() for x in a.terms.split(',') if x.strip()]
+    existing=set(core.pool(app,store))
+    kept,dead,tried,unknown=core.verify_new(app,store,cands,existing,a.locale)
+    already={t:core.pool(app,store).get(t) for t in cands if t in existing}
+    print(f"{store}: {len(cands)} proposed · {tried} new · {len(kept)} alive · {len(dead)} dead (<=5)")
+    for t,(pop,d) in sorted(kept.items(),key=lambda kv:-kv[1][0]):
+        print(f"   ALIVE {pop:>3}/{d:<3} {t}")
+    if dead: print(f"   DEAD  {', '.join(dead)}")
+    _warn_unknown(unknown)
+
+def _excl(slug):
+    return set(_load(slug,'excluded.json',{}).get('terms',[]))
+
+def cmd_exclude(a):
+    """Persist a rejection so it never resurfaces — this is what makes run #2 cheap."""
+    cur=_load(a.slug,'excluded.json',{'terms':[],'why':{}})
+    for t in [x.strip().lower() for x in a.terms.split(',') if x.strip()]:
+        if t not in cur['terms']: cur['terms'].append(t)
+        cur['why'][t]=a.why or 'rejected'
+    save(a.slug,'excluded.json',cur)
+    print(f"{len(cur['terms'])} terms permanently excluded for '{a.slug}'")
+    for t in cur['terms'][-12:]: print(f"   ✗ {t:<30} {cur['why'].get(t,'')}")
+
+
+def _groups():
+    fp=os.path.join(SKILL,'rules','storefront-groups.json')
+    return json.load(open(fp,encoding='utf-8')) if os.path.exists(fp) else {'locale_store':{},'shared_index':{}}
+
+def _siblings(locale):
+    """Locales whose atoms this locale must not repeat: same storefront + same shared index."""
+    if not locale: return set()
+    g=_groups(); ls=g.get('locale_store',{}); out=set()
+    st=ls.get(locale)
+    if st: out|={l for l,s2 in ls.items() if l!=locale and s2==st}
+    for grp in (g.get('shared_index') or {}).values():
+        if locale in grp: out|=set(grp)-{locale}
+    return out
+
+def cmd_fill(a):
+    """THE canonical field builder — encodes the settled policy in one place.
+    tier1 relevant → tier2 same-category filler brands → tier3 neutral dupes.
+    Always scores OLD vs NEW when --current is given (the fr-CA regression lesson)."""
+    c=cfg(a.slug)
+    pools=_load(a.slug,'pools.json')
+    pool=(pools.get(a.store) or {}).get('terms') or _load(a.slug,f'pool_{a.store}.json')
+    if not pool:
+        print(f"no pool for '{a.store}' — run: aso expand {a.slug} --stores {a.store}"); return
+    excl=_excl(a.slug)
+    filler_rx=None
+    if c.get('filler_brands') and not a.no_brands:
+        filler_rx=re.compile('|'.join(re.escape(x.strip()) for x in c['filler_brands'] if x.strip()),re.I)
+    claimed=set()
+    sibs=set() if a.no_claim else _siblings(a.locale)
+    if a.claimed_from: sibs|=set(x.strip() for x in a.claimed_from.split(',') if x.strip())
+    for l in sorted(sibs):
+        snap=_load(a.slug,f'fill_{l}.json',None)
+        if snap:
+            tags=snap.get('tags') or {}
+            # neutral (tier-3) atoms are deliberate duplicates — they never claim
+            claimed|={x for x in (snap.get('atoms') or []) if tags.get(x)!='neutral'}
+            claimed|=set(core.tokens((snap.get('name') or '')+' '+(snap.get('subtitle') or '')))
+    ts_text=a.name+' '+a.subtitle
+    dupe=[]
+    if not a.no_dupes:
+        # tier-3 source: ASCII single-word atoms harvested from the LIVE pools.
+        # pool_us.json is written ONLY by `seed` and goes stale the moment `expand`
+        # runs, which silently starved this tier and shipped 21 locales with 40-60
+        # empty keyword characters (2026-08-31). Read pools.json — the local store
+        # first, then us — and take UNITS of already-verified terms, so relevance
+        # is inherited from the parent phrase instead of re-tested on a bare atom
+        # ('maker', 'planner' carry no relevance stem and were dropped every time).
+        src={}
+        allpools=_load(a.slug,'pools.json')
+        def _harvest(terms):
+            for t,v in (terms or {}).items():
+                if t in excl: continue
+                pop=v[0] if isinstance(v,(list,tuple)) else v
+                for u in core.units(t):
+                    if u in excl: continue
+                    if u.isascii() and len(u)>1 and not core.CJK_RX.search(u):
+                        src[u]=max(src.get(u,0),pop)
+        for st in (a.store,'us'):
+            _harvest((allpools.get(st) or {}).get('terms'))
+        _harvest(_load(a.slug,'pool_us.json'))
+        # competitor brands are legitimate keyword-field material in every market
+        # (never title/subtitle) — carry the configured roster even where a brand
+        # was not separately volume-tested in this store.
+        for b in (c.get('filler_brands') or []):
+            for u in core.units(b.strip().lower()):
+                if u.isascii() and len(u)>2: src.setdefault(u,1)
+        dupe=[u for u,_p in sorted(src.items(),key=lambda kv:-kv[1])]
+    atoms,tags=core.build_field(pool,ts_text,a.locale,claimed=claimed,excl=excl,
+                                filler_rx=filler_rx,dupe_pool=dupe,cap=a.cap)
+    K=','.join(atoms)
+    n1,p1,e1=core.score_field(pool,ts_text,K,a.locale,excl)
+    print(f"T ({len(a.name)}/30)  {a.name}")
+    print(f"S ({len(a.subtitle)}/30)  {a.subtitle}")
+    print(f"K ({len(K)}/{a.cap})  {K}")
+    tc={t:list(tags.values()).count(t) for t in ('relevant','brand','neutral')}
+    ctag=f" · claimed by siblings: {len(claimed)} atoms blocked" if claimed else ""
+    print(f"atoms {len(atoms)}  (relevant {tc['relevant']} · brand {tc['brand']} · neutral {tc['neutral']}){ctag}")
+    errs=core.validate(a.name,a.subtitle,K,a.locale)
+    print("validation: "+('; '.join(errs) if errs else "OK — limits, no T/S overlap, no repeats, no third-language"))
+    if a.current is not None:
+        n0,p0,_=core.score_field(pool,ts_text,a.current,a.locale,excl)
+        sign='+' if p1-p0>=0 else ''
+        print(f"\nOLD ({len(a.current):>3}ch)  {n0} terms / {p0} pop")
+        print(f"NEW ({len(K):>3}ch)  {n1} terms / {p1} pop   ({sign}{p1-p0})")
+        if p1<p0: print("⚠ REGRESSION — proposal earns LESS than the current field. Do not ship without a reason.")
+    else:
+        print(f"\nearns {n1} terms / {p1} popularity")
+    for p,d,t in e1[:12]: print(f"   {p:>3}/{d:<3} {t}")
+    # ONE localization per locale in App Store Connect — the zh-Hant field serves tw, hk
+    # AND mo. So the snapshot is keyed by locale, not by store: there is only one field
+    # to ship. Filling the same locale from a non-mapped store overwrites the real draft
+    # with one scored against the wrong pool, so say so loudly.
+    fname=f'fill_{a.locale}.json'
+    prev=_load(a.slug,fname,None)
+    if prev and prev.get('store') and prev.get('store')!=a.store:
+        print(f"\n  ⚠ {a.locale} was last built from store '{prev['store']}', now '{a.store}'."
+              f"\n    One localization ships to every storefront using {a.locale} — these are"
+              f"\n    competing drafts of the SAME field, and their pop totals are not comparable.")
+    snap={'store':a.store,'locale':a.locale,'name':a.name,'subtitle':a.subtitle,'keywords':K,
+          'atoms':atoms,'tags':tags,'terms':n1,'pop':p1,
+          'date':datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
+    if a.current is not None:
+        n0,p0,_=core.score_field(pool,ts_text,a.current,a.locale,excl)
+        snap['old']={'keywords':a.current,'terms':n0,'pop':p0}
+        snap['valid']=not errs
+    os.makedirs(os.path.join(pdir(a.slug),'history'),exist_ok=True)
+    save(a.slug,fname,snap)
+    save(a.slug,os.path.join('history',
+         datetime.datetime.now().strftime('%Y%m%d-%H%M%S')+f'-fill-{a.locale}.json'),snap)
+    if prev: print(f"\nvs last fill ({prev.get('date','?')}): {prev.get('terms')}t/{prev.get('pop')}p → {n1}t/{p1}p")
+
+def cmd_localwinners(a):
+    """The 5x-yield method as a command: apps ranking HERE but not in the US,
+    and the vocabulary THEIR names use — ready to test with aso verify."""
+    c=cfg(a.slug); store=a.store
+    seeds=(a.seeds.split(',') if a.seeds else _seeds(a.slug,store))[:a.seeds_max]
+    us=_load(a.slug,'competitors_us.json')
+    apps={}
+    for t in seeds:
+        for app in core.top_apps(t,store,a.top):
+            if app['id']: apps.setdefault(app['id'],dict(app,terms=[]))['terms'].append(t)
+    loc=[v for k,v in apps.items() if k not in us]
+    loc.sort(key=lambda v:-(v['ratings'] or 0))
+    print(f"{store}: {len(seeds)} seeds → {len(apps)} ranked apps · {len(loc)} rank here but NOT in us"
+          +("" if us else "  (no competitors_us.json — run competitors --store us first for a real diff)"))
+    for v in loc[:10]:
+        print(f"   #{v['rank']:<2} {v['name'][:44]:<44} {str(v['dev'])[:20]:<20} {v['ratings']}")
+    from collections import Counter
+    STOP={'app','apps','the','and','for','with','your','you','pro','free','plus','inc','ltd','llc',
+          'ai','hd','my','of','to','in','on','game','games'}
+    cnt=Counter(); first=set()
+    for i,v in enumerate(loc):
+        text=(v['name'] or '')+' '+(v['subtitle'] or '')
+        toks=set(re.findall(r'[぀-ヿ一-鿿฀-๿֐-׿]{2,}',text))
+        toks|={w for w in core.tokens(re.sub(r'[぀-ヿ一-鿿฀-๿֐-׿]+',' ',text))
+               if len(w)>=3 and w not in STOP}
+        for w in toks:
+            cnt[w]+=1
+            if i==0: first.add(w)
+    cands=[w for w,n in cnt.most_common(60)
+           if (n>=2 or w in first) and not core.BRAND_RX.search(w)][:20]
+    save(a.slug,f'localwinners_{store}.json',{'locals':[v['name'] for v in loc],'vocab':cands})
+    print(f"\n  their vocabulary ({len(cands)}): "+', '.join(cands))
+    print(f'\n  next: aso verify {a.slug} --store {store} --locale <loc> --terms "'+','.join(cands[:15])+'"')
+
+def cmd_audit(a):
+    """Pure audit: live metadata vs each store's Astro pool. Waste, violations,
+    earned vs available, and a concrete ADD/SWAP per locale. Read-only."""
+    c=cfg(a.slug)
+    live=json.load(open(a.live,encoding='utf-8'))
+    ls=_groups().get('locale_store',{})
+    pools=_load(a.slug,'pools.json'); excl=_excl(a.slug)
+    rows=[]; detail={}
+    for x in live:
+        loc=x['locale']; st=ls.get(loc)
+        pool=(pools.get(st) or {}).get('terms') if st else None
+        if not pool: continue
+        T,S,K=x.get('name') or '',x.get('subtitle') or '',x.get('keywords') or ''
+        ts_text=T+' '+S
+        tsk=set(core.tokens(ts_text)); seen=set(); waste=0; rep=[]
+        for term in [t.strip() for t in K.split(',') if t.strip()]:
+            for w in core.tokens(term):
+                if w in tsk or w in seen: waste+=len(w)+1; rep.append(w)
+                seen.add(w)
+        viol=[(t.strip(),core.classify(t.strip(),loc)) for t in K.split(',')
+              if t.strip() and core.classify(t.strip(),loc)]
+        n,p,earned=core.score_field(pool,ts_text,K,loc,excl)
+        avail=[(v[0],v[1],t) for t,v in pool.items() if v[0]>5 and t not in excl
+               and core.classify(t,loc) is None and core.relevant(t)]
+        ap=sum(pp for pp,_,_ in avail)
+        own=set(core.tokens(ts_text+' '+K)); blob=(ts_text+' '+K).lower()
+        misses=[]
+        for pp,dd,t in sorted(avail,reverse=True):
+            hit=t.lower() in blob if core.CJK_RX.search(t) else set(core.tokens(t))<=own
+            if hit: continue
+            need=[u for u in core.units(t) if u not in own]
+            misses.append({'t':t,'pop':pp,'diff':dd,'need':need,'cost':sum(len(u)+1 for u in need)})
+        free=100-len(K); act=''
+        if misses:
+            m=misses[0]
+            if free>=m['cost']: act=f"ADD {m['t']} ({m['pop']}) — {free}ch free"
+            else:
+                def worth(atom):
+                    at=set(core.tokens(atom))
+                    return max([v[0] for t,v in pool.items() if at<=set(core.tokens(t))] or [0])
+                atoms=[t.strip() for t in K.split(',') if t.strip()]
+                if atoms:
+                    wk=min(atoms,key=worth)
+                    act=f"SWAP out '{wk}' (worth {worth(wk)}) for {m['t']} ({m['pop']})"
+        rows.append((ap-p,loc,st,len(K),waste,n,p,ap,act))
+        detail[loc]={'waste':waste,'repeated':rep[:8],'violations':viol,'free':free,
+                     'earned':[t for _,_,t in earned[:20]],'misses':misses[:10],'action':act}
+    rows.sort(key=lambda r:-r[0])
+    print(f"{'loc':<8}{'st':<4}{'K':>4}{'waste':>6}{'terms':>6}{'pop':>6}{'avail':>7}   action")
+    for gap,loc,st,kl,w,n,p,ap,act in rows:
+        print(f"{loc:<8}{st:<4}{kl:>4}{w:>6}{n:>6}{p:>6}{ap:>7}   {act}")
+    tw=sum(r[4] for r in rows); tk=sum(r[3] for r in rows) or 1
+    print(f"\nTOTAL: waste {tw}ch ({100*tw//tk}% of keyword space) · earned "
+          f"{sum(r[6] for r in rows)} / available {sum(r[7] for r in rows)} pop · {len(rows)} locales")
+    save(a.slug,'audit.json',detail)
+    print("detail → audit.json")
+
+def cmd_clean(a):
+    """Remove research pollution from the Astro pool. DESTRUCTIVE — gated on --yes.
+    Default: irrelevant terms any pop (netflix-class junk) + excluded + probes; brands kept.
+    --dead-only: the conservative rule (pop<=5 AND irrelevant) instead."""
+    c=cfg(a.slug); app=c['astro_app']; store=a.store
+    live=core.pool(app,store)
+    excl=_excl(a.slug); PROBES={'whatsapp','instagram','google translate'}
+    cands={}
+    for t,(p,d) in live.items():
+        try: rel=core.relevant(t)
+        except RuntimeError: rel=True
+        cls=core.classify(t,a.locale)
+        if t in excl: cands[t]='excluded'
+        elif a.probes and t in PROBES: cands[t]='probe'
+        elif not rel and cls!='brand':
+            if a.dead_only and p>5: continue
+            cands[t]=f'irrelevant pop={p}'
+    print(f"{store}: {len(live)} terms in Astro (app {app}) · {len(cands)} removal candidates")
+    for t in sorted(cands): print(f"   ✗ {t:<36} {cands[t]}")
+    if not a.yes:
+        print(f"\n  dry run — add --yes to remove {len(cands)} PERMANENTLY"); return
+    n=core.remove(app,store,list(cands))
+    after=core.pool(app,store)
+    print(f"\n  removed {n} → pool {len(live)} → {len(after)}")
+
+def cmd_status(a):
+    c=cfg(a.slug)
+    print(f"{a.slug} · astro app {c.get('astro_app')} · asc {c.get('asc_app') or '—'}")
+    print(f"  relevance stems {len(c.get('relevance_stems') or [])} · app_terms "
+          f"{len(c.get('app_terms') or [])} · filler brands {len(c.get('filler_brands') or [])} "
+          f"· excluded {len(_excl(a.slug))}")
+    pools=_load(a.slug,'pools.json')
+    if pools:
+        top=sorted(pools.items(),key=lambda kv:-kv[1].get('kept',0))
+        print(f"  stores {len(pools)} · {sum(v.get('kept',0) for v in pools.values())} terms>5 · "
+              +', '.join(f"{s}:{v['kept']}" for s,v in top[:10]))
+    fills=sorted(f[5:-5] for f in os.listdir(pdir(a.slug)) if f.startswith('fill_') and f.endswith('.json'))
+    hist=os.path.join(pdir(a.slug),'history')
+    print(f"  fills: {', '.join(fills) or '—'} · history {len(os.listdir(hist)) if os.path.isdir(hist) else 0}")
+
+P=argparse.ArgumentParser(prog='aso')
+sp=P.add_subparsers(dest='cmd',required=True)
+su=sp.add_parser('setup',help='point the skill at your Astro MCP server and test the connection')
+su.add_argument('--astro-url',help="the MCP address shown in Astro's settings, e.g. http://127.0.0.1:PORT/mcp")
+su.add_argument('--timeout',type=int,help='seconds per Astro call (default 90)')
+su.set_defaults(f=cmd_setup)
+i=sp.add_parser('init'); i.add_argument('slug'); i.add_argument('--astro-app')
+i.add_argument('--create',action='store_true',help='create the app in Astro (PERMANENT — no delete tool)')
+i.add_argument('--appstore-id',help='numeric App Store ID to track a real app')
+i.add_argument('--name',help='display name when creating a temporary research app')
+i.add_argument('--relevance',required=False,help='REQUIRED: comma stems a term must contain to be on-topic')
+i.add_argument('--asc-app'); i.add_argument('--seeds'); i.add_argument('--category',
+    help='comma words that SHOULD appear in top-5 app names, e.g. bird,birding,species')
+i.set_defaults(f=cmd_init)
+s=sp.add_parser('seed'); s.add_argument('slug'); s.add_argument('--add'); s.set_defaults(f=cmd_seed)
+e=sp.add_parser('expand'); e.add_argument('slug'); e.add_argument('--stores',required=True)
+e.add_argument('--add'); e.set_defaults(f=cmd_expand)
+r=sp.add_parser('rank'); r.add_argument('slug'); r.add_argument('--store',required=True)
+r.add_argument('--locale',default=None); r.add_argument('--top',type=int,default=12)
+r.add_argument('--min-pop',type=int,default=15); r.set_defaults(f=cmd_rank)
+k=sp.add_parser('check'); k.add_argument('slug'); k.add_argument('--store',required=True)
+k.add_argument('--locale'); k.add_argument('--name',required=True); k.add_argument('--subtitle',required=True)
+k.add_argument('--keywords',required=True); k.set_defaults(f=cmd_check)
+
+co=sp.add_parser('competitors'); co.add_argument('slug'); co.add_argument('--store',required=True)
+co.add_argument('--seeds'); co.add_argument('--top',type=int,default=5)
+co.add_argument('--seeds-max',type=int,default=12); co.set_defaults(f=cmd_competitors)
+mi=sp.add_parser('mine'); mi.add_argument('slug'); mi.add_argument('--store',required=True)
+mi.add_argument('--seeds'); mi.add_argument('--locale'); mi.add_argument('--seeds-max',type=int,default=12)
+mi.add_argument('--from-localwinners',action='store_true',
+    help='seed from localwinners_<store>.json vocab — extract what the LOCAL competitor set indexes')
+mi.set_defaults(f=cmd_mine)
+re_=sp.add_parser('related'); re_.add_argument('slug'); re_.add_argument('--store',required=True)
+re_.add_argument('--seeds'); re_.add_argument('--locale'); re_.add_argument('--seeds-max',type=int,default=12)
+re_.set_defaults(f=cmd_related)
+ve=sp.add_parser('verify'); ve.add_argument('slug'); ve.add_argument('--store',required=True)
+ve.add_argument('--locale'); ve.add_argument('--terms',required=True); ve.set_defaults(f=cmd_verify)
+fl=sp.add_parser('fill'); fl.add_argument('slug'); fl.add_argument('--store',required=True)
+fl.add_argument('--locale',required=True); fl.add_argument('--name',required=True)
+fl.add_argument('--subtitle',required=True); fl.add_argument('--current')
+fl.add_argument('--claimed-from'); fl.add_argument('--no-dupes',action='store_true')
+fl.add_argument('--no-brands',action='store_true'); fl.add_argument('--cap',type=int,default=100)
+fl.add_argument('--no-claim',action='store_true',
+    help='refill the group PRIMARY: siblings were built around it and must not claim against it')
+fl.set_defaults(f=cmd_fill)
+cp=sp.add_parser('compose'); cp.add_argument('slug'); cp.add_argument('--store',required=True)
+cp.add_argument('--locale',required=True); cp.add_argument('--name',required=True)
+cp.add_argument('--subtitle',required=True); cp.add_argument('--min-pop',type=int,default=15)
+cp.set_defaults(f=cmd_fill,current=None,claimed_from=None,no_dupes=False,no_brands=False,cap=100,no_claim=False)
+lw=sp.add_parser('localwinners'); lw.add_argument('slug'); lw.add_argument('--store',required=True)
+lw.add_argument('--seeds'); lw.add_argument('--top',type=int,default=6)
+lw.add_argument('--seeds-max',type=int,default=6); lw.set_defaults(f=cmd_localwinners)
+au=sp.add_parser('audit'); au.add_argument('slug'); au.add_argument('--live',required=True,
+    help='JSON list of {locale,name,subtitle,keywords} — fetch via helm-asc, see SKILL.md')
+au.set_defaults(f=cmd_audit)
+cl=sp.add_parser('clean'); cl.add_argument('slug'); cl.add_argument('--store',required=True)
+cl.add_argument('--locale'); cl.add_argument('--yes',action='store_true')
+cl.add_argument('--probes',action='store_true'); cl.add_argument('--dead-only',action='store_true')
+cl.set_defaults(f=cmd_clean)
+st=sp.add_parser('status'); st.add_argument('slug'); st.set_defaults(f=cmd_status)
+ex=sp.add_parser('exclude'); ex.add_argument('slug'); ex.add_argument('--store')
+ex.add_argument('--terms',required=True); ex.add_argument('--why'); ex.set_defaults(f=cmd_exclude)
+a=P.parse_args(); a.f(a)
