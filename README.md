@@ -2,7 +2,7 @@
 
 # ASO Research
 
-**Find the right App Store keywords for your app, in every country — by typing one line in Claude Code.**
+**Find App Store keywords in every country's own language — the ones nobody has claimed yet — by typing one line in Claude Code.**
 
 ![macOS](https://img.shields.io/badge/macOS_14+-000000?logo=apple&logoColor=white)
 ![Python](https://img.shields.io/badge/Python_3.8+-3776AB?logo=python&logoColor=white)
@@ -99,10 +99,10 @@ Done.
 Type `/`, pick **aso-keywords**, and say what your app does:
 
 ```
-/aso-keywords research this: bird identifier, bird sound id
+/aso-keywords research this: bird identifier, bird sound id — for jp, de, br
 ```
 
-That's the whole interface. Claude asks for anything it still needs — usually your app's name — then does the research.
+That's the whole interface. Name the countries you care about, or leave it to Claude. It asks for anything it still needs — usually your app's name — then does the research.
 
 Other things you can ask:
 
@@ -123,11 +123,11 @@ Other things you can ask:
 
 | | |
 |:--|:--|
-| **1 · Tests your words** | Exactly as you typed them, for real search popularity. |
-| **2 · Looks at competitors** | What words do apps ranking for your terms use? |
-| **3 · Looks at countries** | The big one. Apps that rank in Japan or Brazil but *not* in the US — Claude tests *their* words. Other countries don't translate your keywords; they use different ones. |
-| **4 · Scores every word** | How cheap is it to rank for? A word with few competitors in their titles beats a popular word everyone already owns. |
-| **5 · Builds your fields** | Title, subtitle, keywords. If you have a live listing, you see OLD vs NEW and a warning if the new one is worse. |
+| **1 · Tests your words** | In every store you chose, exactly as you typed them, for real search popularity. |
+| **2 · Looks at competitors** | Per country: what words do the apps ranking there actually use? |
+| **3 · Finds native words** | The big one. In each country Claude reads the local apps that rank — the ones global apps never noticed — and tests *their* words in the local language. People in Japan or Brazil don't search a translation of your keyword; they search a different word. Many of those words have no one in their title yet. That's the gap. |
+| **4 · Scores every word** | How cheap is it to rank for? A native word with nobody in their title beats a popular word everyone already owns. |
+| **5 · Builds your fields** | Title, subtitle, keywords — one set per locale. If you have a live listing, you see OLD vs NEW and a warning if the new one is worse. |
 
 Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 

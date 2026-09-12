@@ -7,7 +7,7 @@
   <rect x="44" y="76" width="230" height="86" rx="8" fill="#010409"/>
   <text x="58" y="104" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#58a6ff">/aso-keywords</text>
   <text x="58" y="126" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">research this:</text>
-  <text x="58" y="146" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">bird identifier, bird song</text>
+  <text x="58" y="146" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">bird identifier · jp de br</text>
   <text x="44" y="196" font-size="13" fill="#e6edf3">One line in Claude Code chat.</text>
   <text x="44" y="216" font-size="13" fill="#8b949e">Claude asks for anything it still</text>
   <text x="44" y="234" font-size="13" fill="#8b949e">needs — your app name, what</text>
@@ -23,16 +23,16 @@
   <text x="366" y="56" font-size="12" font-weight="700" fill="#8b949e" letter-spacing="1.5">CLAUDE RESEARCHES</text>
   <g font-size="13" fill="#e6edf3">
     <circle cx="380" cy="86" r="11" fill="#1f3a5f"/><text x="380" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">1</text>
-    <text x="400" y="90">Test your words in the US store</text>
+    <text x="400" y="90">Test your words in every store</text>
     <circle cx="380" cy="122" r="11" fill="#1f3a5f"/><text x="380" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">2</text>
-    <text x="400" y="126">Mine what competitors rank for</text>
+    <text x="400" y="126">See what rivals rank for, per country</text>
     <circle cx="380" cy="158" r="11" fill="#1f3a5f"/><text x="380" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">3</text>
-    <text x="400" y="162">Find local winners per country</text>
-    <text x="400" y="178" font-size="11" fill="#8b949e">their words, not a translation of yours</text>
+    <text x="400" y="162">Find native words no one has claimed</text>
+    <text x="400" y="178" font-size="11" fill="#8b949e">local rivals’ words, not a translation of yours</text>
     <circle cx="380" cy="208" r="11" fill="#1f3a5f"/><text x="380" y="212" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">4</text>
     <text x="400" y="212">Score by how cheaply you can rank</text>
     <circle cx="380" cy="244" r="11" fill="#1f3a5f"/><text x="380" y="248" text-anchor="middle" font-size="11" font-weight="700" fill="#58a6ff">5</text>
-    <text x="400" y="248">Build the fields, OLD vs NEW</text>
+    <text x="400" y="248">Build the fields for every locale</text>
   </g>
   <text x="366" y="288" font-size="11" fill="#8b949e">Results go to files, not into the chat.</text>
 
