@@ -4,9 +4,6 @@ Phases:  init → seed (US) → expand (all stores) → rank → propose → rep
 Every command writes files and prints a SHORT summary. Raw data never goes to the model.
 """
 import json,os,re,sys,argparse,datetime
-for _stream in (sys.stdout,sys.stderr):        # Windows consoles default to a legacy
-    try: _stream.reconfigure(encoding='utf-8')  # code page that cannot print 野鳥 or é
-    except Exception: pass
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import core
 SKILL=core.SKILL

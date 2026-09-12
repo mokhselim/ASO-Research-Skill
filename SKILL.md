@@ -5,7 +5,7 @@ description: App Store keyword research and metadata construction — US seed pa
 
 # ASO keyword research
 
-CLI: `python3 <skill>/bin/aso` (`python <skill>\bin\aso` on Windows) · state per project in
+CLI: `python3 <skill>/bin/aso` (macOS only — Astro is a Mac app) · state per project in
 `projects/<slug>/` · the Astro MCP address is set once by the user with `aso setup --astro-url …`
 (or `ASTRO_URL`). If any command prints **"Astro is not configured"**, run `aso setup` — with no
 arguments it tries Astro's documented default and tests it. If that fails, ask the user to open
