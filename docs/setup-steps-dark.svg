@@ -4,8 +4,8 @@
   <circle cx="120" cy="58" r="22" fill="#58a6ff"/>
   <text x="120" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">1</text>
   <text x="120" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Get the skill</text>
-  <text x="120" y="138" text-anchor="middle" font-size="13" fill="#8b949e">One git clone into</text>
-  <text x="120" y="158" text-anchor="middle" font-size="13" fill="#8b949e">your skills folder.</text>
+  <text x="120" y="138" text-anchor="middle" font-size="13" fill="#8b949e">One command installs it</text>
+  <text x="120" y="158" text-anchor="middle" font-size="13" fill="#8b949e">for whichever agent you use.</text>
   <circle cx="360" cy="58" r="22" fill="#58a6ff"/>
   <text x="360" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">2</text>
   <text x="360" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Turn on Astro's MCP</text>
@@ -14,11 +14,11 @@
   <circle cx="600" cy="58" r="22" fill="#58a6ff"/>
   <text x="600" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">3</text>
   <text x="600" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Connect</text>
-  <text x="600" y="138" text-anchor="middle" font-size="13" fill="#8b949e">Run  aso setup</text>
-  <text x="600" y="158" text-anchor="middle" font-size="13" fill="#8b949e">It says: OK — Astro answered.</text>
+  <text x="600" y="138" text-anchor="middle" font-size="13" fill="#8b949e">Say: set up aso-keywords</text>
+  <text x="600" y="158" text-anchor="middle" font-size="13" fill="#8b949e">Your agent runs the setup.</text>
   <circle cx="840" cy="58" r="22" fill="#58a6ff"/>
   <text x="840" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">4</text>
-  <text x="840" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Type  /</text>
-  <text x="840" y="138" text-anchor="middle" font-size="13" fill="#8b949e">Open Claude Code, type /,</text>
-  <text x="840" y="158" text-anchor="middle" font-size="13" fill="#8b949e">pick aso-keywords. Done.</text>
+  <text x="840" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf3">Ask your agent</text>
+  <text x="840" y="138" text-anchor="middle" font-size="13" fill="#8b949e">Say: use aso-keywords</text>
+  <text x="840" y="158" text-anchor="middle" font-size="13" fill="#8b949e">It takes it from there.</text>
 </svg>

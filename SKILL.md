@@ -1,6 +1,6 @@
 ---
 name: aso-keywords
-description: App Store keyword research and metadata construction — US seed pass, all-country localized expansion, title-gap selection, and title/subtitle/keyword assembly via Astro (local MCP) and Helm. Use whenever the task is ASO keyword research, choosing keywords for a store, localizing app metadata, or auditing an app's title/subtitle/keyword fields.
+description: App Store keyword research and metadata construction, worldwide — test the user's keywords, mine competitors, find native-language terms per country that no one has claimed, score by title gap, and assemble title/subtitle/keyword fields via Astro (local MCP, called directly over HTTP) and optionally Helm. Use whenever the task is ASO keyword research, choosing keywords for a store, deciding which countries to localise into, localizing app metadata, or auditing an app's title/subtitle/keyword fields.
 ---
 
 # ASO keyword research
@@ -12,6 +12,13 @@ arguments it tries Astro's documented default and tests it. If that fails, ask t
 Astro → Settings → MCP Server and turn on "Enable MCP Server" (and, if Astro shows a different
 address, to run `aso setup --astro-url <that address>`). Never invent a host or port yourself.
 Every command prints a short summary and writes files — raw data never goes into the conversation.
+
+## Setting up — the user says "set up" or "connect"
+
+Run `python3 <skill>/bin/aso setup` and relay its output verbatim. On `OK — Astro answered`, tell
+the user they're set up and can now hand you keywords. On failure, repeat the fix the command
+prints (open Astro → Settings → MCP Server → Enable) — do not guess a host or port. If your own
+command sandbox blocks network access, ask the user to approve the command or allow localhost.
 
 ## Start here — the user opens with keywords
 
