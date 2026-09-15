@@ -21,25 +21,28 @@
 
 <table>
 <tr>
-<td align="center" width="33%">
-<img src="docs/icon-claude.svg" width="72" alt=""><br><br>
-<b>Claude Code</b><br>
+<td align="center" width="33%" valign="top">
+<a href="https://claude.ai/code"><img src="docs/logo-claude.png" width="80" alt="Claude Code"></a><br><br>
+<a href="https://claude.ai/code"><b>Claude Code</b></a><br>
 <img src="https://img.shields.io/badge/REQUIRED-D97757?style=flat-square" alt="Required"><br><br>
-Where you type. One line in the chat starts the whole research.<br><br>
+<b>Where you type.</b><br>
+One line in the chat starts the whole research. Claude runs every step and hands you the result.<br><br>
 <a href="https://claude.ai/code"><img src="https://img.shields.io/badge/Get%20Claude%20Code%20%E2%86%92-1f2328?style=flat-square" alt="Get Claude Code"></a>
 </td>
-<td align="center" width="33%">
-<img src="docs/icon-astro.svg" width="72" alt=""><br><br>
-<b>Astro</b><br>
+<td align="center" width="33%" valign="top">
+<a href="https://tryastro.app?aff=ZykvL2"><img src="docs/logo-astro.png" width="80" alt="Astro"></a><br><br>
+<a href="https://tryastro.app?aff=ZykvL2"><b>Astro</b></a><br>
 <img src="https://img.shields.io/badge/REQUIRED-D97757?style=flat-square" alt="Required"><br><br>
-The data. Keyword popularity, difficulty, and who ranks where — for every country. Mac app, macOS 14 or newer.<br><br>
+<b>The data.</b><br>
+Keyword popularity, difficulty, and who ranks where — in every country's store. Mac app, macOS 14 or newer.<br><br>
 <a href="https://tryastro.app?aff=ZykvL2"><img src="https://img.shields.io/badge/Get%20Astro%20%E2%86%92-4F46E5?style=flat-square" alt="Get Astro"></a>
 </td>
-<td align="center" width="33%">
-<img src="docs/icon-helm.svg" width="72" alt=""><br><br>
-<b>Helm</b><br>
+<td align="center" width="33%" valign="top">
+<a href="https://helm-app.com"><img src="docs/logo-helm.png" width="80" alt="Helm"></a><br><br>
+<a href="https://helm-app.com"><b>Helm</b></a><br>
 <img src="https://img.shields.io/badge/OPTIONAL-6e7781?style=flat-square" alt="Optional"><br><br>
-Connects to App Store Connect. Lets Claude read your live listing and publish the result. Without it, you copy and paste.<br><br>
+<b>The publisher.</b><br>
+Connects to App Store Connect, so Claude can read your live listing and publish the new fields. Without it, you copy and paste.<br><br>
 <a href="https://helm-app.com"><img src="https://img.shields.io/badge/Get%20Helm%20%E2%86%92-0F766E?style=flat-square" alt="Get Helm"></a>
 </td>
 </tr>
