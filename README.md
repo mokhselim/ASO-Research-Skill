@@ -15,39 +15,52 @@
 </picture>
 
 </div>
+<br>
+
+## What do you need?
+
+<table>
+<tr>
+<td align="center" width="33%">
+<img src="docs/icon-claude.svg" width="72" alt=""><br><br>
+<b>Claude Code</b><br>
+<img src="https://img.shields.io/badge/REQUIRED-D97757?style=flat-square" alt="Required"><br><br>
+Where you type. One line in the chat starts the whole research.<br><br>
+<a href="https://claude.ai/code"><img src="https://img.shields.io/badge/Get%20Claude%20Code%20%E2%86%92-1f2328?style=flat-square" alt="Get Claude Code"></a>
+</td>
+<td align="center" width="33%">
+<img src="docs/icon-astro.svg" width="72" alt=""><br><br>
+<b>Astro</b><br>
+<img src="https://img.shields.io/badge/REQUIRED-D97757?style=flat-square" alt="Required"><br><br>
+The data. Keyword popularity, difficulty, and who ranks where — for every country. Mac app, macOS 14 or newer.<br><br>
+<a href="https://tryastro.app?aff=ZykvL2"><img src="https://img.shields.io/badge/Get%20Astro%20%E2%86%92-4F46E5?style=flat-square" alt="Get Astro"></a>
+</td>
+<td align="center" width="33%">
+<img src="docs/icon-helm.svg" width="72" alt=""><br><br>
+<b>Helm</b><br>
+<img src="https://img.shields.io/badge/OPTIONAL-6e7781?style=flat-square" alt="Optional"><br><br>
+Connects to App Store Connect. Lets Claude read your live listing and publish the result. Without it, you copy and paste.<br><br>
+<a href="https://helm-app.com"><img src="https://img.shields.io/badge/Get%20Helm%20%E2%86%92-0F766E?style=flat-square" alt="Get Helm"></a>
+</td>
+</tr>
+</table>
+
+> **Mac only.** Astro runs only on macOS, and the tool needs Astro. Python is also needed — every Mac already has it.
 
 <br>
 
 ## Contents
 
-1. [What you need](#1-what-you-need)
-2. [Set up — 4 steps](#2-set-up--4-steps)
-3. [Use it](#3-use-it)
-4. [What Claude does](#4-what-claude-does)
-5. [Publishing](#5-publishing)
-6. [Help](#6-help)
-7. [For developers](#7-for-developers)
+1. [Set up — 4 steps](#1-set-up--4-steps)
+2. [Use it](#2-use-it)
+3. [What Claude does](#3-what-claude-does)
+4. [Publishing](#4-publishing)
+5. [Help](#5-help)
+6. [For developers](#6-for-developers)
 
 <br>
 
-## 1. What you need
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/what-you-need-dark.svg">
-  <img alt="Claude Code (you have it), Astro (required), Helm (optional)." src="docs/what-you-need-light.svg" width="960">
-</picture>
-
-| | | |
-|:--|:--|:--|
-| **Claude Code** | ✅ You have it | Where you type. |
-| **Astro** | 🔴 Required | The data — keyword popularity, difficulty, who ranks where. macOS 14 or newer, paid. [tryastro.app](https://tryastro.app) |
-| **Helm** | ⚪ Optional | Connects to App Store Connect, so the tool can read your live listing and publish the result. Without it, you copy and paste. [helm-app.com](https://helm-app.com) |
-
-> **macOS only.** Astro runs only on the Mac, and the tool needs Astro. Python is also needed — every Mac already has it.
-
-<br>
-
-## 2. Set up — 4 steps
+## 1. Set up — 4 steps
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/setup-steps-dark.svg">
@@ -66,7 +79,7 @@ This puts the skill where Claude Code looks for skills. Nothing else to install.
 
 ### Step 2 · Turn on Astro's MCP server
 
-Open **Astro** → **Settings** → **MCP Server** → turn on **Enable MCP Server**.
+Open [**Astro**](https://tryastro.app?aff=ZykvL2) → **Settings** → **MCP Server** → turn on **Enable MCP Server**.
 
 Keep Astro open while you work — the tool talks to it.
 
@@ -94,7 +107,7 @@ Done.
 
 <br>
 
-## 3. Use it
+## 2. Use it
 
 Type `/`, pick **aso-keywords**, and say what your app does:
 
@@ -114,7 +127,7 @@ Other things you can ask:
 
 <br>
 
-## 4. What Claude does
+## 3. What Claude does
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/what-claude-does-dark.svg">
@@ -133,7 +146,7 @@ Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 
 <br>
 
-## 5. Publishing
+## 4. Publishing
 
 **With Helm** — Claude reads your live listing for the OLD vs NEW check, and can publish the finished fields to App Store Connect.
 
@@ -141,12 +154,12 @@ Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 
 <br>
 
-## 6. Help
+## 5. Help
 
 | You see | Do this |
 |:--|:--|
 | `aso-keywords` is not in the `/` list | Start a **new** Claude Code session — skills load at the start. Check the folder is `~/.claude/skills/aso-keywords`. |
-| `astro unreachable … is Astro running?` | Open Astro. Check **Settings → MCP Server** is on. Run Step 3 again. |
+| `astro unreachable … is Astro running?` | Open [Astro](https://tryastro.app?aff=ZykvL2). Check **Settings → MCP Server** is on. Run Step 3 again. |
 | Astro shows an address other than `http://127.0.0.1:8089/mcp` | `python3 ~/.claude/skills/aso-keywords/bin/aso setup --astro-url <the address Astro shows>` |
 | `Astro is not configured` | Step 3 was skipped. Run it. |
 | `python3: command not found` | macOS offers to install developer tools — click **Install**, then run Step 3 again. |
@@ -154,7 +167,7 @@ Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 
 <br>
 
-## 7. For developers
+## 6. For developers
 
 <details>
 <summary>CLI, config and rule files</summary>
