@@ -1,5 +1,5 @@
 ---
-name: aso-keywords
+name: aso-research
 description: App Store keyword research and metadata construction, worldwide — test the user's keywords, mine competitors, find native-language terms per country that no one has claimed, score by title gap, and assemble title/subtitle/keyword fields via Astro (local MCP, called directly over HTTP) and optionally Helm. Use whenever the task is ASO keyword research, choosing keywords for a store, deciding which countries to localise into, localizing app metadata, or auditing an app's title/subtitle/keyword fields.
 ---
 
@@ -20,18 +20,121 @@ the user they're set up and can now hand you keywords. On failure, repeat the fi
 prints (open Astro → Settings → MCP Server → Enable) — do not guess a host or port. If your own
 command sandbox blocks network access, ask the user to approve the command or allow localhost.
 
+## How to talk to the user
+
+The pipeline below is fixed. What this section fixes is the *conversation around it*: the
+user must always know what was asked, what is being done, what is finished, what is half-done,
+and what has never been touched. Follow these five rules in order; none of them is optional.
+
+### 1 · Intake — ask before you run anything
+
+Open a **new project** with one message that collects what the pipeline needs. Ask in two
+levels, numbered, and skip any item the user already gave — never re-ask a known answer.
+
+**Level 1 — required (the CLI refuses to run without these):**
+
+1. **The app** — name, or App Store ID / link if it is live. (ID → real app tracked in Astro;
+   no ID → a temporary research app is created, which is **permanent** in Astro — say so.)
+2. **What it does, in one line** — you derive `--relevance` stems and `--category` words from
+   this. Show the stems you derived and ask for a yes before `init`; they are the filter.
+3. **Seed keywords** — the words the user would type to find their own app. Tested as-is.
+
+**Level 2 — shapes the plan (offer a default, accept "you decide"):**
+
+4. **Countries** — which storefronts to research. Default: `us` foundation + the ones the user
+   names. If they say "you decide", propose 3–5 with one line of reasoning each and confirm.
+5. **Live listing?** — do they have current title/subtitle/keywords per locale? If yes, ask
+   for them (or read via Helm) so every `fill` shows OLD vs NEW. If no, say fills start blank.
+6. **Depth** — *quick* (seed → localwinners → verify → rank → fill per store) or *deep*
+   (full loop until nothing new survives). Default deep for the first store, quick after.
+
+Then **echo the research plan** and wait for a go:
+
+```
+Research plan — <app>
+  seeds        bird identifier, bird sound id
+  relevance    bird, birding, vogel, oiseau, 野鳥, 새     ← you can edit these
+  stores       us (foundation) → jp → de → br            ← in this order
+  live fields  none — fills start from scratch
+  depth        deep on us, quick on the rest
+This creates a permanent research app in Astro. Go ahead?
+```
+
+Record the stores in the project so progress is tracked: `aso init … --stores "jp,de,br"`.
+Countries added later: `aso status <slug> --stores kr`.
+
+### 2 · Narrate every command in one line
+
+Before each CLI call, say what it is for in plain words (*"mining the vocabulary of the apps
+that rank in jp — this is where the native terms come from"*). After it, relay the command's
+own summary lines — counts, top terms, `next:` hint — and nothing more. Never paste raw JSON.
+
+### 3 · Store checkpoint — after every store, before the next one
+
+When a store's stages are done (or you must stop mid-store), post a **store card**:
+
+```
+■ jp — done  (ja)
+  found        41 native terms alive · 12 with ≤2 title owners (real gaps)
+  best gaps    野鳥 図鑑 (58/22, 1 owner) · 鳥 鳴き声 (44/18, 0 owners) · …
+  dead         9 proposed terms scored ≤5 — listed in localwinners_jp.json
+  fields       fill_ja.json — earns 14 terms / 612 pop  (OLD 9 / 380, +232)
+  needs you    3 UNVERIFIED terms: 鳥 撮影, 双眼鏡, 野鳥観察   → keep or exclude?
+  next         de
+```
+
+If the card has a **needs you** line, stop and wait. Do not carry decisions the user has not
+made into the next store. Exclusions the user confirms go through `aso exclude … --why …` so
+they persist.
+
+### 4 · The progress board is the only proof of progress
+
+Run `aso status <slug>` and show its board (a) after every store card, (b) whenever the user
+asks "where are we", and (c) **first thing when a session resumes** — before running anything
+else, so the user sees the state their project is actually in. The board lists every store
+the user asked for, marks each stage done or not, and names the ones that are **NOT STARTED**.
+Never describe progress from memory; the board reads the files.
+
+### 5 · Session wrap-up — never end with "done"
+
+When the user says stop, when a wave ends, or when you are about to go quiet, post the
+wrap-up. It has four parts, always in this order, and it names the untouched stores explicitly:
+
+```
+Session summary — <app>
+  finished     jp (ja) · de (de-DE)              fields built, OLD vs NEW shown
+  half-done    br — pool + competitors only; localwinners/verify/rank/fill still to do
+  not started  kr, fr                            never touched this session
+  waiting on   your call on 3 UNVERIFIED jp terms (see the jp card)
+  files        projects/birdlens/ — fill_ja.json, fill_de-DE.json, rank_jp.json, …
+  to resume    say "continue with br" — I'll start from where the board shows
+```
+
+Then the `aso status` board underneath it. A wave is "complete" only when every target store
+on the board reads *fields built*; otherwise say which ones are not, in the wrap-up, every time.
+
+### Decisions that are always the user's
+
+* Creating the Astro app (`init --create`) — permanent, no delete tool.
+* Any term in an **UNVERIFIED** bucket or any seed that **did NOT make the pool** — show the
+  verdict and the reason, ask keep / exclude / retest. Never drop a user's word silently.
+* Shipping a field that shows **⚠ REGRESSION**.
+* `aso clean` — destructive; state exactly what will be removed and get a yes.
+* Changing relevance stems after `init` — say what the change lets in or keeps out.
+
 ## Start here — the user opens with keywords
 
 The trigger for a new project is the user sharing **one or more keywords**
 ("research this: hair color changer, hairstyle try on"). Those are the seeds — pass them
 straight in; user-given seeds are never filtered, they get tested as-is against real popularity.
+Run the intake above first (skip what they already told you), then:
 
     aso init <slug> --create --name "<App> (research)" \
-        --seeds "the,users,keywords" --relevance "…" --category "…"
+        --seeds "the,users,keywords" --relevance "…" --category "…" --stores "jp,de,br"
     aso seed <slug>            # pushes the seeds to the us store, prints the pool
 
-Ask only for what the user did not provide: app name or App Store ID, relevance stems,
-category words. Then follow the flow.
+**Resuming** ("continue", "where were we", or any message about an existing project): run
+`aso status <slug>`, show the board, and pick up at the first store that is not *fields built*.
 
 ## The flow
 
@@ -60,7 +163,7 @@ category words. Then follow the flow.
 
 | command | what it does |
 |---|---|
-| `init <slug> --create --relevance … --category …` | new project; `--create` makes the Astro app (**permanent**, no delete tool) |
+| `init <slug> --create --relevance … --category … --stores …` | new project; `--create` makes the Astro app (**permanent**, no delete tool); `--stores` = the storefronts the user wants, tracked by `status` |
 | `seed <slug> --add "kw,…"` | add seeds to `us`, show clean pool + UNVERIFIED bucket |
 | `expand <slug> --stores cc,…` | pull per-store pools (read-only), merge into `pools.json` |
 | `competitors <slug> --store cc` | top-5 apps per seed; 🆕LOCAL = ranks here, not in us |
@@ -74,7 +177,7 @@ category words. Then follow the flow.
 | `check <slug> … --keywords …` | validate any hand-written field |
 | `audit <slug> --live file.json` | read-only portfolio audit: waste, violations, earned vs available, ADD/SWAP |
 | `clean <slug> --store cc [--yes]` | purge irrelevant pollution from the Astro pool (destructive, gated) |
-| `status <slug>` | project dashboard |
+| `status <slug> [--stores cc,…]` | project dashboard + per-store progress board (done / in progress / NOT STARTED); `--stores` adds targets to track |
 
 ## The fill policy
 
@@ -161,7 +264,8 @@ runs before any translation pass.
 
 `astro_app` · `asc_app` · `relevance_stems` (REQUIRED, per-language, grows) · `app_terms`
 (exact-match allowlist) · `allow_terms` (un-blocks the global blocklists, category-paired) ·
-`category_words` (top-5 trap check) · `filler_brands` (tier-2) · `seeds`
+`category_words` (top-5 trap check) · `filler_brands` (tier-2) · `seeds` · `target_stores`
+(what the user asked for — the progress board reports each) · `stores` (what has a pool)
 
 ## Fetching live metadata for `audit`
 

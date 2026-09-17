@@ -5,7 +5,7 @@
   <rect x="24" y="24" width="270" height="282" rx="12" fill="#161b22" stroke="#30363d"/>
   <text x="44" y="56" font-size="12" font-weight="700" fill="#8b949e" letter-spacing="1.5">YOU TYPE</text>
   <rect x="44" y="76" width="230" height="86" rx="8" fill="#010409"/>
-  <text x="58" y="104" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#58a6ff">use aso-keywords</text>
+  <text x="58" y="104" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#58a6ff">use aso-research</text>
   <text x="58" y="126" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">research this:</text>
   <text x="58" y="146" font-size="13" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#e6edf3">bird identifier · jp de br</text>
   <text x="44" y="196" font-size="13" fill="#e6edf3">One line to your AI agent.</text>

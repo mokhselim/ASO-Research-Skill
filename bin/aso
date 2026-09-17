@@ -89,9 +89,11 @@ def cmd_init(a):
        'relevance_stems':[x.strip() for x in a.relevance.split(',') if x.strip()],
        'category_words':a.category.split(',') if a.category else [],
        'seeds':a.seeds.split(',') if a.seeds else [],
+       'target_stores':[x.strip().lower() for x in (a.stores or '').split(',') if x.strip()],
        'stores':[],'created':str(datetime.date.today())}
     save(a.slug,'config.json',c)
     print(f"project '{a.slug}' created  (astro app {astro_app})")
+    if c['target_stores']: print(f"  target stores: {', '.join(c['target_stores'])}  (status tracks each one)")
     print(f"  category words: {c['category_words'] or '— set with --category, used to detect intent traps'}")
     print(f"  next: aso seed {a.slug}   (pushes your seed keywords to the US store and shows the pool)")
 
@@ -551,8 +553,32 @@ def cmd_clean(a):
     after=core.pool(app,store)
     print(f"\n  removed {n} → pool {len(live)} → {len(after)}")
 
+STAGES=('pool','competitors','localwinners','mine','related','rank','fill')
+
+def _store_progress(slug,store):
+    """Which stages have left a file for this store. Read-only: derived from what the
+    other commands already write, so the board can never disagree with the data."""
+    d=pdir(slug); pools=_load(slug,'pools.json')
+    ls=_groups().get('locale_store',{})
+    locales=sorted(l for l,s2 in ls.items() if s2==store)
+    fills=[l for l in locales if os.path.exists(os.path.join(d,f'fill_{l}.json'))]
+    done={
+      'pool': store in pools or os.path.exists(os.path.join(d,f'pool_{store}.json')),
+      'competitors': os.path.exists(os.path.join(d,f'competitors_{store}.json')),
+      'localwinners': store=='us' or os.path.exists(os.path.join(d,f'localwinners_{store}.json')),
+      'mine': os.path.exists(os.path.join(d,f'mined_{store}.json')),
+      'related': os.path.exists(os.path.join(d,f'related_{store}.json')),
+      'rank': os.path.exists(os.path.join(d,f'rank_{store}.json')),
+      'fill': bool(fills),
+    }
+    return done,locales,fills
+
 def cmd_status(a):
     c=cfg(a.slug)
+    if a.stores:
+        c['target_stores']=sorted(set(c.get('target_stores') or [])|
+                                  {x.strip().lower() for x in a.stores.split(',') if x.strip()})
+        save(a.slug,'config.json',c)
     print(f"{a.slug} · astro app {c.get('astro_app')} · asc {c.get('asc_app') or '—'}")
     print(f"  relevance stems {len(c.get('relevance_stems') or [])} · app_terms "
           f"{len(c.get('app_terms') or [])} · filler brands {len(c.get('filler_brands') or [])} "
@@ -565,6 +591,33 @@ def cmd_status(a):
     fills=sorted(f[5:-5] for f in os.listdir(pdir(a.slug)) if f.startswith('fill_') and f.endswith('.json'))
     hist=os.path.join(pdir(a.slug),'history')
     print(f"  fills: {', '.join(fills) or '—'} · history {len(os.listdir(hist)) if os.path.isdir(hist) else 0}")
+
+    # ── progress board: every store the user asked for, plus every store that has data ──
+    touched=set(pools)|{re.sub(r'^(competitors|localwinners|mined|related|rank|pool)_|\.json$','',f)
+                        for f in os.listdir(pdir(a.slug))
+                        if re.match(r'^(competitors|localwinners|mined|related|rank|pool)_[a-z]{2}\.json$',f)}
+    targets=[s for s in (c.get('target_stores') or [])]
+    stores=list(dict.fromkeys(['us']+targets+sorted(set(c.get('stores') or [])|touched)))
+    if not stores: return
+    print("\n  progress  (● done · · not yet · – n/a)")
+    print(f"  {'store':<6}{'pool':<6}{'compet':<8}{'locals':<8}{'mine':<6}{'relat':<7}{'rank':<6}{'fill':<14}state")
+    todo=[]
+    for st in stores:
+        done,locales,fl=_store_progress(a.slug,st)
+        n=sum(done.values())
+        if not any(done.values()) and st not in touched: state='NOT STARTED'
+        elif done['fill']: state='fields built'
+        else: state=f'in progress ({n}/{len(STAGES)})'
+        if state!='fields built': todo.append((st,state))
+        cell=lambda k: ('–' if (k=='localwinners' and st=='us') else '●' if done[k] else '·')
+        fills_s=(','.join(fl) if fl else ('·' if locales else '–'))[:13]
+        tag='  ← target' if st in targets else ''
+        print(f"  {st:<6}{cell('pool'):<6}{cell('competitors'):<8}{cell('localwinners'):<8}"
+              f"{cell('mine'):<6}{cell('related'):<7}{cell('rank'):<6}{fills_s:<14}{state}{tag}")
+    if todo:
+        print(f"\n  still open: "+', '.join(f"{s} ({st})" for s,st in todo))
+    else:
+        print("\n  every listed store has fields built")
 
 P=argparse.ArgumentParser(prog='aso')
 sp=P.add_subparsers(dest='cmd',required=True)
@@ -579,6 +632,7 @@ i.add_argument('--name',help='display name when creating a temporary research ap
 i.add_argument('--relevance',required=False,help='REQUIRED: comma stems a term must contain to be on-topic')
 i.add_argument('--asc-app'); i.add_argument('--seeds'); i.add_argument('--category',
     help='comma words that SHOULD appear in top-5 app names, e.g. bird,birding,species')
+i.add_argument('--stores',help='comma storefronts the user wants researched, e.g. us,jp,de — status reports each')
 i.set_defaults(f=cmd_init)
 s=sp.add_parser('seed'); s.add_argument('slug'); s.add_argument('--add'); s.set_defaults(f=cmd_seed)
 e=sp.add_parser('expand'); e.add_argument('slug'); e.add_argument('--stores',required=True)
@@ -625,7 +679,9 @@ cl=sp.add_parser('clean'); cl.add_argument('slug'); cl.add_argument('--store',re
 cl.add_argument('--locale'); cl.add_argument('--yes',action='store_true')
 cl.add_argument('--probes',action='store_true'); cl.add_argument('--dead-only',action='store_true')
 cl.set_defaults(f=cmd_clean)
-st=sp.add_parser('status'); st.add_argument('slug'); st.set_defaults(f=cmd_status)
+st=sp.add_parser('status'); st.add_argument('slug')
+st.add_argument('--stores',help='add target storefronts to track, e.g. jp,de')
+st.set_defaults(f=cmd_status)
 ex=sp.add_parser('exclude'); ex.add_argument('slug'); ex.add_argument('--store')
 ex.add_argument('--terms',required=True); ex.add_argument('--why'); ex.set_defaults(f=cmd_exclude)
 a=P.parse_args(); a.f(a)

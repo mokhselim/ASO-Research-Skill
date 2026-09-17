@@ -14,11 +14,11 @@
   <circle cx="600" cy="58" r="22" fill="#2563eb"/>
   <text x="600" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">3</text>
   <text x="600" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Connect</text>
-  <text x="600" y="138" text-anchor="middle" font-size="13" fill="#64748b">Say: set up aso-keywords</text>
+  <text x="600" y="138" text-anchor="middle" font-size="13" fill="#64748b">Say: set up aso-research</text>
   <text x="600" y="158" text-anchor="middle" font-size="13" fill="#64748b">Your agent runs the setup.</text>
   <circle cx="840" cy="58" r="22" fill="#2563eb"/>
   <text x="840" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">4</text>
   <text x="840" y="112" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">Ask your agent</text>
-  <text x="840" y="138" text-anchor="middle" font-size="13" fill="#64748b">Say: use aso-keywords</text>
+  <text x="840" y="138" text-anchor="middle" font-size="13" fill="#64748b">Say: use aso-research</text>
   <text x="840" y="158" text-anchor="middle" font-size="13" fill="#64748b">It takes it from there.</text>
 </svg>

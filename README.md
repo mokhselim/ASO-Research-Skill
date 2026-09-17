@@ -99,7 +99,7 @@ Any name from `npx skills add --help` works — `gemini-cli`, `github-copilot`, 
 No Node? For Claude Code you can clone straight into its skills folder:
 
 ```bash
-git clone https://github.com/mokhselim/ASO-Research-Skill.git ~/.claude/skills/aso-keywords
+git clone https://github.com/mokhselim/ASO-Research-Skill.git ~/.claude/skills/aso-research
 ```
 
 </details>
@@ -115,7 +115,7 @@ Keep Astro open while you work — the tool talks to it.
 Ask your agent:
 
 ```
-set up aso-keywords
+set up aso-research
 ```
 
 It runs the connection check for you and reports back. You want to see:
@@ -135,13 +135,13 @@ Once is enough — it remembers.
 python3 <skill folder>/bin/aso setup
 ```
 
-where `<skill folder>` is where Step 1 put it — `~/.claude/skills/aso-keywords` for Claude Code, `~/.agents/skills/aso-keywords` for Codex, or whatever path `npx skills add` printed.
+where `<skill folder>` is where Step 1 put it — `~/.claude/skills/aso-research` for Claude Code, `~/.agents/skills/aso-research` for Codex, or whatever path `npx skills add` printed.
 
 </details>
 
 ### Step 4 · Ask your agent
 
-Say **use aso-keywords** and what your app does. Done — see the next section for the exact words per agent.
+Say **use aso-research** and what your app does. Done — see the next section for the exact words per agent.
 
 <br>
 
@@ -151,13 +151,25 @@ Tell your agent what your app does and which countries matter. The wording diffe
 
 | Agent | What you type |
 |:--|:--|
-| **Claude Code** | `/aso-keywords research this: bird identifier, bird sound id — for jp, de, br` |
-| **Codex** | `$aso-keywords research this: bird identifier, bird sound id — for jp, de, br` |
-| **Any other agent** | `Use the aso-keywords skill. Research this: bird identifier, bird sound id — for jp, de, br` |
+| **Claude Code** | `/aso-research research this: bird identifier, bird sound id — for jp, de, br` |
+| **Codex** | `$aso-research research this: bird identifier, bird sound id — for jp, de, br` |
+| **Any other agent** | `Use the aso-research skill. Research this: bird identifier, bird sound id — for jp, de, br` |
 
 Most agents also pick the skill up on their own when you simply ask for App Store keyword research — the explicit name just makes sure.
 
-That's the whole interface. Name the countries you care about, or leave it to the agent. It asks for anything it still needs — usually your app's name — then does the research.
+That's the whole interface. Name the countries you care about, or leave it to the agent.
+
+**What the conversation looks like.** Before it runs anything, the agent asks for what it still needs — your app, one line on what it does, your seed words, the countries, and whether you have a live listing — then shows you a short research plan and waits for your go. After each country it posts a **store card** (what it found, what died, what needs your call), and it never ends with a bare "done": you get a **session summary** that lists which countries are finished, which are half-done, and which were never touched, plus a progress board so you can pick up exactly where it stopped:
+
+```
+  store pool  compet  locals  mine  relat  rank  fill          state
+  us    ●     ●       –       ●     ●      ●     en-US         fields built
+  jp    ●     ●       ●       ●     ●      ●     ja            fields built  ← target
+  de    ●     ●       ·       ·     ·      ·     ·             in progress (2/7)  ← target
+  br    ·     ·       ·       ·     ·      ·     ·             NOT STARTED  ← target
+```
+
+To continue later, just say `continue with de` — the agent reads the board first.
 
 Other things you can ask:
 
@@ -165,6 +177,7 @@ Other things you can ask:
 which countries should I localise into?
 write me a Japanese title and subtitle
 check my current keywords — here is my live listing
+where are we?  /  continue with br
 ```
 
 <br>
@@ -173,7 +186,7 @@ check my current keywords — here is my live listing
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/what-claude-does-dark.svg">
-  <img alt="You ask for aso-keywords. 1 Tests your words in every store. 2 Looks at competitors. 3 Finds native words. 4 Scores every word. 5 Builds your fields. You get ready-to-paste fields." src="docs/what-claude-does-light.svg" width="960">
+  <img alt="You ask for aso-research. 1 Tests your words in every store. 2 Looks at competitors. 3 Finds native words. 4 Scores every word. 5 Builds your fields. You get ready-to-paste fields." src="docs/what-claude-does-light.svg" width="960">
 </picture>
 
 | | |
@@ -228,7 +241,7 @@ cd <skill folder>
 python3 bin/aso init birdlens --create --name "BirdLens (research)" \
     --seeds "bird identifier,bird sound id" \
     --relevance "bird,birding,vogel,oiseau,野鳥,새" \
-    --category "bird,nature,wildlife"
+    --category "bird,nature,wildlife" --stores "jp,de,br"
 python3 bin/aso seed birdlens
 python3 bin/aso localwinners birdlens --store jp
 python3 bin/aso rank birdlens --store jp --locale ja
@@ -238,7 +251,7 @@ python3 bin/aso fill birdlens --store jp --locale ja --name "..." --subtitle "..
 | command | what it does |
 |:--|:--|
 | `setup [--astro-url …] [--timeout …]` | save your Astro address and test it (tries Astro's default if none given) |
-| `init <slug>` | new project (`--create` also makes the Astro app — permanent, no delete tool) |
+| `init <slug>` | new project (`--create` also makes the Astro app — permanent, no delete tool; `--stores` records the countries you want tracked) |
 | `seed <slug>` | push seeds into the `us` store, show what survives |
 | `expand <slug> --stores cc,…` | pull per-store pools, read-only |
 | `competitors <slug> --store cc` | top-5 apps per seed; flags local-only rivals |
@@ -252,7 +265,7 @@ python3 bin/aso fill birdlens --store jp --locale ja --name "..." --subtitle "..
 | `check <slug> --keywords …` | validate a hand-written field |
 | `audit <slug> --live file.json` | audit live metadata: waste, violations, ADD/SWAP |
 | `clean <slug> --store cc` | purge irrelevant terms from a pool (destructive, gated) |
-| `status <slug>` | project dashboard |
+| `status <slug> [--stores cc,…]` | project dashboard and the per-store progress board (done / in progress / NOT STARTED) |
 
 Scoring: `popularity ÷ difficulty × (10 − title_owners)/10`.
 
@@ -265,6 +278,7 @@ Scoring: `popularity ÷ difficulty × (10 − title_owners)/10`.
 | `allow_terms` | un-blocks a blocklist entry, paired to your category |
 | `category_words` | used for the top-5 trap check |
 | `filler_brands` | rival products of the same category |
+| `target_stores` | the countries you asked for — the progress board reports each one |
 | `astro_app` / `asc_app` | backend app id, and your App Store Connect id |
 
 **Shared rule files** — `rules/`. `brands.txt`, `wrong-intent.txt`, `traps.txt` and `relevance.txt` ship **empty on purpose**: they hold category-specific calls, and a word that's off-topic for one app is the core term for another. An empty file means "no rule".
