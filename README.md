@@ -23,28 +23,28 @@
 <table>
 <tr>
 <td align="center" width="33%" valign="top">
-<a href="https://tryastro.app?aff=ZykvL2"><img src="docs/logo-astro.png" width="80" alt="Astro"></a><br><br>
-<a href="https://tryastro.app?aff=ZykvL2"><b>Astro</b></a><br>
+<a href="https://tryastro.app?aff=ZykvL2" target="_blank" rel="noopener"><img src="docs/logo-astro.png" width="80" alt="Astro"></a><br><br>
+<a href="https://tryastro.app?aff=ZykvL2" target="_blank" rel="noopener"><b>Astro</b></a><br>
 <img src="https://img.shields.io/badge/REQUIRED-D97757?style=flat-square" alt="Required"><br><br>
 <b>The data.</b><br>
 Keyword popularity, difficulty, and who ranks where — in every country's store. This is the one thing you must have. Mac app, macOS 14 or newer.<br><br>
-<a href="https://tryastro.app?aff=ZykvL2"><img src="https://img.shields.io/badge/Get%20Astro%20%E2%86%92-4F46E5?style=flat-square" alt="Get Astro"></a>
+<a href="https://tryastro.app?aff=ZykvL2" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/Get%20Astro%20%E2%86%92-4F46E5?style=flat-square" alt="Get Astro"></a>
 </td>
 <td align="center" width="33%" valign="top">
 <img src="docs/logo-agent.svg" width="80" alt="AI coding agent"><br><br>
 <b>An AI coding agent</b><br>
 <img src="https://img.shields.io/badge/YOU%20HAVE%20ONE-16a34a?style=flat-square" alt="You have one"><br><br>
 <b>Where you type.</b><br>
-Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Windsurf, Zed — any agent that supports <a href="https://agentskills.io">Agent Skills</a>. Over 70 do.<br><br>
+Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Windsurf, Zed — any agent that supports <a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a>. Over 70 do.<br><br>
 <img src="https://img.shields.io/badge/Any%20of%2070%2B-1f2328?style=flat-square" alt="70+ agents">
 </td>
 <td align="center" width="33%" valign="top">
-<a href="https://helm-app.com"><img src="docs/logo-helm.png" width="80" alt="Helm"></a><br><br>
-<a href="https://helm-app.com"><b>Helm</b></a><br>
+<a href="https://helm-app.com" target="_blank" rel="noopener"><img src="docs/logo-helm.png" width="80" alt="Helm"></a><br><br>
+<a href="https://helm-app.com" target="_blank" rel="noopener"><b>Helm</b></a><br>
 <img src="https://img.shields.io/badge/OPTIONAL-6e7781?style=flat-square" alt="Optional"><br><br>
 <b>The publisher.</b><br>
 Connects to App Store Connect, so your agent can read your live listing and publish the new fields. Without it, you copy and paste.<br><br>
-<a href="https://helm-app.com"><img src="https://img.shields.io/badge/Get%20Helm%20%E2%86%92-0F766E?style=flat-square" alt="Get Helm"></a>
+<a href="https://helm-app.com" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/Get%20Helm%20%E2%86%92-0F766E?style=flat-square" alt="Get Helm"></a>
 </td>
 </tr>
 </table>
@@ -106,7 +106,7 @@ git clone https://github.com/mokhselim/ASO-Research-Skill.git ~/.claude/skills/a
 
 ### Step 2 · Turn on Astro's MCP server
 
-Open [**Astro**](https://tryastro.app?aff=ZykvL2) → **Settings** → **MCP Server** → turn on **Enable MCP Server**.
+Open <a href="https://tryastro.app?aff=ZykvL2" target="_blank" rel="noopener"><b>Astro</b></a> → **Settings** → **MCP Server** → turn on **Enable MCP Server**.
 
 Keep Astro open while you work — the tool talks to it.
 
@@ -214,7 +214,7 @@ Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 | You see | Do this |
 |:--|:--|
 | The agent doesn't know the skill | Start a **new** session — skills load at the start. If it still doesn't, run Step 1 again with `--agent <your agent>`. |
-| `astro unreachable … is Astro running?` | Open [Astro](https://tryastro.app?aff=ZykvL2). Check **Settings → MCP Server** is on. Run Step 3 again. |
+| `astro unreachable … is Astro running?` | Open <a href="https://tryastro.app?aff=ZykvL2" target="_blank" rel="noopener">Astro</a>. Check **Settings → MCP Server** is on. Run Step 3 again. |
 | `astro unreachable` but Astro **is** running | Your agent is sandboxing commands with the network off. Approve the command or allow network access for it — Astro is on `localhost`, but a sandbox can still block it. |
 | Astro shows an address other than `http://127.0.0.1:8089/mcp` | Ask your agent to run `aso setup --astro-url <the address Astro shows>` |
 | `Astro is not configured` | Step 3 was skipped. Run it. |
@@ -230,7 +230,7 @@ Results are saved as files in `projects/<your-app>/`, not printed into the chat.
 
 <br>
 
-**Why it works with any agent.** The skill is a plain-English `SKILL.md` (the [Agent Skills](https://agentskills.io) format) plus a Python CLI. The CLI talks to Astro itself, over plain HTTP on localhost — it never asks the agent's MCP client to do it. So the agent needs no MCP support at all, only the ability to run a shell command. The same files install into every agent unchanged.
+**Why it works with any agent.** The skill is a plain-English `SKILL.md` (the <a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> format) plus a Python CLI. The CLI talks to Astro itself, over plain HTTP on localhost — it never asks the agent's MCP client to do it. So the agent needs no MCP support at all, only the ability to run a shell command. The same files install into every agent unchanged.
 
 **Trust.** Standard library only, no dependencies. The only network traffic is to your own Astro on `localhost`. Nothing is sent anywhere else, nothing is read from your keychain, no telemetry. Read `bin/core.py` — it's short.
 
