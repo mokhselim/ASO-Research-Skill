@@ -30,8 +30,9 @@ and what has never been touched. Follow these rules in order; none of them is op
 
 On any invocation, before you say anything: run `aso setup` (no arguments) and
 `ls <skill>/projects/`. If setup fails, relay its fix and stop — nothing else works without
-Astro. If projects exist, your first question is *"Continue `<slug>`, or start a new app?"*
-(one option per project, plus "New app"); on continue, jump to rule 4. Otherwise start intake.
+Astro. Most calls are **new research**, so go straight to intake; if projects exist, add one
+line to the opener — *"Existing: `birdlens` (jp built, de half-done) — say `continue birdlens`
+to pick it up"* — and do not ask about them. Resume (rule 4) only when the user names one.
 
 ### 1 · Intake — one short ask, then options to pick from
 
@@ -42,14 +43,17 @@ mark it *(Recommended)*. Agents without such a tool: same questions in chat, opt
 `(a) (b) (c)`, and "or type your own" after each. Never ask something the user already told
 you; never ask more than one round before showing the plan.
 
-**Round 1 — the three things only the user knows** (plain chat, one friendly message):
+**Round 1 — the two things only the user knows** (plain chat, one friendly message):
 
-> Tell me three things and I'll take it from there:
+> Tell me two things and I'll take it from there:
 > 1. **Your app** — name, or the App Store link if it's live
-> 2. **What it does** — one line is enough
-> 3. **The words you'd type to find it** — 2–5 seed keywords
+> 2. **The words you'd type to find it** — 2–5 seed keywords
 
-**Round 2 — choices, as one question set** (derive the stems from their one-liner first):
+Do **not** ask what the app does. The name and the seeds already say it; a live link says even
+more (its category, subtitle). Derive the relevance stems and category words from those, and
+let round 2 confirm them — that question is the user's chance to correct you.
+
+**Round 2 — choices, as one question set:**
 
 | question | options (first = recommended) | free text |
 |---|---|---|
@@ -148,8 +152,8 @@ which ones are not, in the wrap-up, every time.
 The trigger for a new project is the user sharing **one or more keywords**
 ("research this: hair color changer, hairstyle try on"). Those are the seeds — pass them
 straight in; user-given seeds are never filtered, they get tested as-is against real popularity.
-Keywords in the opening message answer intake item 3 — don't ask for them again. Run the
-rest of the intake (rounds 1–3 above, skipping what they already told you), then:
+Keywords in the opening message answer intake item 2 — don't ask for them again; if the app
+name is there too, skip round 1 entirely and go to round 2. Then:
 
     aso init <slug> --create --name "<App> (research)" \
         --seeds "the,users,keywords" --relevance "…" --category "…" --stores "jp,de,br"
