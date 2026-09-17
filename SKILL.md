@@ -24,41 +24,59 @@ command sandbox blocks network access, ask the user to approve the command or al
 
 The pipeline below is fixed. What this section fixes is the *conversation around it*: the
 user must always know what was asked, what is being done, what is finished, what is half-done,
-and what has never been touched. Follow these five rules in order; none of them is optional.
+and what has never been touched. Follow these rules in order; none of them is optional.
 
-### 1 · Intake — ask before you run anything
+### 0 · Preflight — silent, before the first question
 
-Open a **new project** with one message that collects what the pipeline needs. Ask in two
-levels, numbered, and skip any item the user already gave — never re-ask a known answer.
+On any invocation, before you say anything: run `aso setup` (no arguments) and
+`ls <skill>/projects/`. If setup fails, relay its fix and stop — nothing else works without
+Astro. If projects exist, your first question is *"Continue `<slug>`, or start a new app?"*
+(one option per project, plus "New app"); on continue, jump to rule 4. Otherwise start intake.
 
-**Level 1 — required (the CLI refuses to run without these):**
+### 1 · Intake — one short ask, then options to pick from
 
-1. **The app** — name, or App Store ID / link if it is live. (ID → real app tracked in Astro;
-   no ID → a temporary research app is created, which is **permanent** in Astro — say so.)
-2. **What it does, in one line** — you derive `--relevance` stems and `--category` words from
-   this. Show the stems you derived and ask for a yes before `init`; they are the filter.
-3. **Seed keywords** — the words the user would type to find their own app. Tested as-is.
+**Ask questions as questions, not as a form.** If your agent has an interactive question tool
+(Claude Code: `AskUserQuestion`), use it for every choice below — each question gets 2–4 options
+and the user can always type their own answer instead. Put the recommended option first and
+mark it *(Recommended)*. Agents without such a tool: same questions in chat, options lettered
+`(a) (b) (c)`, and "or type your own" after each. Never ask something the user already told
+you; never ask more than one round before showing the plan.
 
-**Level 2 — shapes the plan (offer a default, accept "you decide"):**
+**Round 1 — the three things only the user knows** (plain chat, one friendly message):
 
-4. **Countries** — which storefronts to research. Default: `us` foundation + the ones the user
-   names. If they say "you decide", propose 3–5 with one line of reasoning each and confirm.
-5. **Live listing?** — do they have current title/subtitle/keywords per locale? If yes, ask
-   for them (or read via Helm) so every `fill` shows OLD vs NEW. If no, say fills start blank.
-6. **Depth** — *quick* (seed → localwinners → verify → rank → fill per store) or *deep*
-   (full loop until nothing new survives). Default deep for the first store, quick after.
+> Tell me three things and I'll take it from there:
+> 1. **Your app** — name, or the App Store link if it's live
+> 2. **What it does** — one line is enough
+> 3. **The words you'd type to find it** — 2–5 seed keywords
 
-Then **echo the research plan** and wait for a go:
+**Round 2 — choices, as one question set** (derive the stems from their one-liner first):
+
+| question | options (first = recommended) | free text |
+|---|---|---|
+| **Relevance filter** — "I'll treat a term as on-topic only if it contains one of: `bird, birding, vogel, oiseau, 野鳥, 새`. OK?" | Looks right · Let me edit them | edited stems |
+| **Countries** | Suggest 3–5 for this app · US only for now · I'll list them | store codes |
+| **Live listing** — "Do you have current title / subtitle / keywords?" | Not live yet — start blank · Yes, I'll paste them · Yes, read them via Helm | pasted fields |
+| **Depth** | Deep on the first store, quick after · Deep everywhere · Quick everywhere | — |
+
+*Quick* = seed → localwinners → verify → rank → fill per store. *Deep* = the full loop until
+nothing new survives. If the user picked "Suggest", propose the stores with one line of
+reasoning each inside the plan below — don't ask a third round.
+
+**Round 3 — the plan, with a go/no-go question:**
 
 ```
 Research plan — <app>
   seeds        bird identifier, bird sound id
-  relevance    bird, birding, vogel, oiseau, 野鳥, 새     ← you can edit these
-  stores       us (foundation) → jp → de → br            ← in this order
+  relevance    bird, birding, vogel, oiseau, 野鳥, 새
+  stores       us (foundation) → jp → de → br
+                 jp — biggest birding market outside the US, native-only vocabulary
+                 de — …
   live fields  none — fills start from scratch
   depth        deep on us, quick on the rest
-This creates a permanent research app in Astro. Go ahead?
 ```
+
+Then ask: **"Go ahead? This creates a permanent research app in Astro."** — options
+*Go* · *Change something*. Only `Go` runs `init`.
 
 Record the stores in the project so progress is tracked: `aso init … --stores "jp,de,br"`.
 Countries added later: `aso status <slug> --stores kr`.
@@ -83,9 +101,10 @@ When a store's stages are done (or you must stop mid-store), post a **store card
   next         de
 ```
 
-If the card has a **needs you** line, stop and wait. Do not carry decisions the user has not
-made into the next store. Exclusions the user confirms go through `aso exclude … --why …` so
-they persist.
+If the card has a **needs you** line, stop and ask — as a question, not a paragraph: up to 4
+terms → one multi-select question ("Which of these should I keep?"), more → the list in chat
+with keep / exclude / retest per term. Do not carry decisions the user has not made into the
+next store. Exclusions the user confirms go through `aso exclude … --why …` so they persist.
 
 ### 4 · The progress board is the only proof of progress
 
@@ -110,8 +129,10 @@ Session summary — <app>
   to resume    say "continue with br" — I'll start from where the board shows
 ```
 
-Then the `aso status` board underneath it. A wave is "complete" only when every target store
-on the board reads *fields built*; otherwise say which ones are not, in the wrap-up, every time.
+Then the `aso status` board underneath it, then one question: **"What next?"** — *Continue
+with <next open store>* · *Stop here* · *Ship the finished fields* (if Helm is set up). A wave
+is "complete" only when every target store on the board reads *fields built*; otherwise say
+which ones are not, in the wrap-up, every time.
 
 ### Decisions that are always the user's
 
@@ -127,7 +148,8 @@ on the board reads *fields built*; otherwise say which ones are not, in the wrap
 The trigger for a new project is the user sharing **one or more keywords**
 ("research this: hair color changer, hairstyle try on"). Those are the seeds — pass them
 straight in; user-given seeds are never filtered, they get tested as-is against real popularity.
-Run the intake above first (skip what they already told you), then:
+Keywords in the opening message answer intake item 3 — don't ask for them again. Run the
+rest of the intake (rounds 1–3 above, skipping what they already told you), then:
 
     aso init <slug> --create --name "<App> (research)" \
         --seeds "the,users,keywords" --relevance "…" --category "…" --stores "jp,de,br"

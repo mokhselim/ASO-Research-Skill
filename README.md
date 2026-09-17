@@ -159,7 +159,7 @@ Most agents also pick the skill up on their own when you simply ask for App Stor
 
 That's the whole interface. Name the countries you care about, or leave it to the agent.
 
-**What the conversation looks like.** Before it runs anything, the agent asks for what it still needs — your app, one line on what it does, your seed words, the countries, and whether you have a live listing — then shows you a short research plan and waits for your go. After each country it posts a **store card** (what it found, what died, what needs your call), and it never ends with a bare "done": you get a **session summary** that lists which countries are finished, which are half-done, and which were never touched, plus a progress board so you can pick up exactly where it stopped:
+**What the conversation looks like.** Before it runs anything, the agent checks Astro is reachable, then asks for three things — your app, one line on what it does, your seed words — and follows up with a few pick-an-option questions (countries, live listing, depth; you can always type your own answer). Then it shows you a short research plan and waits for your go. After each country it posts a **store card** (what it found, what died, what needs your call), and it never ends with a bare "done": you get a **session summary** that lists which countries are finished, which are half-done, and which were never touched, plus a progress board so you can pick up exactly where it stopped:
 
 ```
   store pool  compet  locals  mine  relat  rank  fill          state
