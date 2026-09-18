@@ -46,7 +46,8 @@ you; never ask more than one round before showing the plan.
 **Round 1 — the two things only the user knows** (plain chat, one friendly message):
 
 > Tell me two things and I'll take it from there:
-> 1. **Your app** — name, or the App Store link if it's live
+> 1. **Your app** — name, or the App Store link if it's live — or "no name yet" (we pick one
+>    after the research, from what every market actually searches)
 > 2. **The words you'd type to find it** — 2–5 seed keywords
 
 Do **not** ask what the app does. The name and the seeds already say it; a live link says even
@@ -62,9 +63,10 @@ let round 2 confirm them — that question is the user's chance to correct you.
 | **Live listing** — "Do you have current title / subtitle / keywords?" | Not live yet — start blank · Yes, I'll paste them · Yes, read them via Helm | pasted fields |
 | **Depth** | Deep on the first store, quick after · Deep everywhere · Quick everywhere | — |
 
-*Quick* = seed → localwinners → verify → rank → fill per store. *Deep* = the full loop until
-nothing new survives. If the user picked "Suggest", propose the stores with one line of
-reasoning each inside the plan below — don't ask a third round.
+*Quick* = seed → localwinners → verify → rank per store. *Deep* = the full loop until nothing
+new survives. Both stop at `rank` — building fields is a separate, final phase (rule 3b).
+If the user picked "Suggest", propose the stores with one line of reasoning each inside the
+plan below — don't ask a third round.
 
 **Round 3 — the plan, with a go/no-go question:**
 
@@ -93,22 +95,64 @@ own summary lines — counts, top terms, `next:` hint — and nothing more. Neve
 
 ### 3 · Store checkpoint — after every store, before the next one
 
-When a store's stages are done (or you must stop mid-store), post a **store card**:
+When a store's research is done through `rank` (or you must stop mid-store), post a **store
+card**. It is research only — **no fill, no name question** — the next store starts right after:
 
 ```
-■ jp — done  (ja)
+■ jp — researched  (ja)
   found        41 native terms alive · 12 with ≤2 title owners (real gaps)
   best gaps    野鳥 図鑑 (58/22, 1 owner) · 鳥 鳴き声 (44/18, 0 owners) · …
   dead         9 proposed terms scored ≤5 — listed in localwinners_jp.json
-  fields       fill_ja.json — earns 14 terms / 612 pop  (OLD 9 / 380, +232)
   needs you    3 UNVERIFIED terms: 鳥 撮影, 双眼鏡, 野鳥観察   → keep or exclude?
-  next         de
+  next         de  (fields for every store come after the last one)
 ```
+
+**Best gaps never list competitor product names.** `rules/brands.txt` ships empty, so `rank`
+does not strip them — after `competitors`, copy rival product names into
+`config.filler_brands` (they belong in the keyword field as tier 2) and skip them when you
+show `rank_*.json`. Do **not** `aso exclude` them: exclusions apply to every tier and would
+kill the legitimate tier-2 filler. `exclude` is for wrong-intent / off-category terms only.
 
 If the card has a **needs you** line, stop and ask — as a question, not a paragraph: up to 4
 terms → one multi-select question ("Which of these should I keep?"), more → the list in chat
 with keep / exclude / retest per term. Do not carry decisions the user has not made into the
 next store. Exclusions the user confirms go through `aso exclude … --why …` so they persist.
+
+### 3b · Naming checkpoint, then build everything — once, after the LAST store
+
+Fill is the **last phase**, never a per-store step. Building the US fields after the US
+research locks a name (and, on a shared search index, the keyword atoms) before the other
+markets have been read — the exact mistake this rule exists to prevent. The only exception is
+the user explicitly asking for one store's fields *now*; say what that locks in, then do it.
+
+When every target store has `rank_<store>.json`:
+
+* **Brand already settled** (given at intake, or read from a live listing) → that string is
+  fixed; skip the checkpoint. Only the per-locale descriptor after it is chosen at fill.
+* **Unnamed, or the user asked to rename** → post **one naming card**, competitor brands
+  already stripped, top clean terms per store side by side:
+
+```
+Naming — what each market actually searches
+  us   steps tracker · pedometer · walk
+  jp   万歩計 · 歩数計 · 散歩
+  de   schrittzähler · schritte zähler · wander
+  kr   만보기 · 걸음수 · 산책
+  fr   podomètre · randonnée · compteur de calories
+  br   saúde · pedometer · step counter
+```
+
+  A name is a **short distinctive brand**, not the US head term copied into every locale.
+  Head terms are descriptors (`: 万歩計`, `: Schrittzähler`). Popularity is storefront-relative,
+  so no column "wins" — read them for what the brand must leave room for. Propose 2–3 names;
+  for each, show the 30-character title spend in every target locale, native descriptor first
+  where the brand is English. Flag anything generic or keyword-stuffed (App Store 2.3.7).
+  Ask: **A / B / C, or type your own.** Only then build.
+
+**Build order:** native locale before its English sibling; every locale on one shared index
+(`rules/storefront-groups.json` — `en-US`, `fr-FR`, `pt-BR`, `ko`, … share the US index) filled
+as one batch so atom claiming sees all of them; independent stores (`jp`, `de`) after.
+Every fill shows OLD vs NEW when a live field exists. Then the wrap-up.
 
 ### 4 · The progress board is the only proof of progress
 
@@ -125,18 +169,22 @@ wrap-up. It has four parts, always in this order, and it names the untouched sto
 
 ```
 Session summary — <app>
-  finished     jp (ja) · de (de-DE)              fields built, OLD vs NEW shown
-  half-done    br — pool + competitors only; localwinners/verify/rank/fill still to do
+  researched   us · jp (ja) · de (de-DE)         through rank — no fields yet
+  half-done    br — pool + competitors only; localwinners/verify/rank still to do
   not started  kr, fr                            never touched this session
+  fields       none yet — naming checkpoint + build come after kr, fr, br
   waiting on   your call on 3 UNVERIFIED jp terms (see the jp card)
-  files        projects/birdlens/ — fill_ja.json, fill_de-DE.json, rank_jp.json, …
+  files        projects/birdlens/ — rank_us.json, rank_jp.json, rank_de.json, …
   to resume    say "continue with br" — I'll start from where the board shows
 ```
 
+Two states, never merged: *researched* (has `rank_<store>.json`) and *fields built* (has
+`fill_<locale>.json`). A store is not "finished" because its research is.
+
 Then the `aso status` board underneath it, then one question: **"What next?"** — *Continue
-with <next open store>* · *Stop here* · *Ship the finished fields* (if Helm is set up). A wave
-is "complete" only when every target store on the board reads *fields built*; otherwise say
-which ones are not, in the wrap-up, every time.
+with <next open store>* · *Stop here* · *Name & build* (when every store is researched) ·
+*Ship the finished fields* (if Helm is set up). A wave is "complete" only when every target
+store on the board reads *fields built*; otherwise say which ones are not, every time.
 
 ### Decisions that are always the user's
 
@@ -160,27 +208,40 @@ name is there too, skip round 1 entirely and go to round 2. Then:
     aso seed <slug>            # pushes the seeds to the us store, prints the pool
 
 **Resuming** ("continue", "where were we", or any message about an existing project): run
-`aso status <slug>`, show the board, and pick up at the first store that is not *fields built*.
+`aso status <slug>`, show the board, and pick up at the first store without `rank` done. When
+every store has rank and none has fill, the next step is the naming checkpoint (3b), not a fill.
 
 ## The flow
 
 ```
    0. SETUP          aso init <slug> --create --relevance "…" --category "…"
                      │  (refuses to run without relevance stems — fail closed)
+                     │  name optional — an unnamed app is named at step 3b, not here
                      ▼
    1. US FOUNDATION  aso seed --add … → competitors → mine → related   ◄─┐
       (go deep)      until nothing new survives                          │ loop
-                     ▼                                                  ─┘
-   2. LOCAL WINNERS  aso localwinners --store cc      ★ highest yield
+                     → aso rank --store us                              ─┘
+                     │  rival product names → config.filler_brands (tier-2 filler,
+                     │  never title/subtitle, never aso exclude)
+                     ▼
+   2. EACH STORE     aso localwinners --store cc      ★ highest yield
                      who ranks HERE but not in the US → THEIR words
                      → aso verify --terms "their,words"
                      → aso mine --store cc --from-localwinners
+                     → aso rank --store cc   (score = pop ÷ diff × (10−owners)/10)
+                     │  store card = research only · next store
+                     │  NO fill, NO name question until the last store is ranked
                      ▼
-   3. SELECT         aso rank (score = pop ÷ diff × (10−owners)/10)
-                     aso exclude --terms … --why …    (verdicts persist)
+   3. SELECT         aso exclude --terms … --why …    (wrong-intent; persists)
+                     rank display skips filler_brands / competitor names
                      ▼
-   4. BUILD          aso fill  → tier1 relevant · tier2 filler brands ·
-                     tier3 neutral dupes · always OLD vs NEW · snapshots
+   3b. NAME          unnamed or "rename" → naming checkpoint (all markets side by side)
+                     brand already settled → skip
+                     ▼
+   4. BUILD          aso fill — LAST phase, every locale: tier1 relevant · tier2 filler
+                     brands · tier3 neutral dupes · OLD vs NEW · snapshots
+                     native locale before English sibling · shared-index group as one batch
+                     per-store fill only when the user asks for one store now
                      ▼
    5. SHIP           helm-asc (separate skill) — REPLACE the field, never append
 ```

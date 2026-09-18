@@ -159,13 +159,13 @@ Most agents also pick the skill up on their own when you simply ask for App Stor
 
 That's the whole interface. Name the countries you care about, or leave it to the agent.
 
-**What the conversation looks like.** Before it runs anything, the agent checks Astro is reachable, then asks for two things — your app and your seed words — and follows up with a few pick-an-option questions (countries, live listing, depth; you can always type your own answer). Then it shows you a short research plan and waits for your go. After each country it posts a **store card** (what it found, what died, what needs your call), and it never ends with a bare "done": you get a **session summary** that lists which countries are finished, which are half-done, and which were never touched, plus a progress board so you can pick up exactly where it stopped:
+**What the conversation looks like.** Before it runs anything, the agent checks Astro is reachable, then asks for two things — your app and your seed words — and follows up with a few pick-an-option questions (countries, live listing, depth; you can always type your own answer). Then it shows you a short research plan and waits for your go. After each country it posts a **store card** (what it found, what died, what needs your call). It researches **every** country before it builds anything — so if your app has no name yet, you choose it once, from a side-by-side of what each market actually searches, and the title, subtitle and keywords for all locales are built together at the end. It never ends with a bare "done": you get a **session summary** that lists which countries are finished, which are half-done, and which were never touched, plus a progress board so you can pick up exactly where it stopped:
 
 ```
   store pool  compet  locals  mine  relat  rank  fill          state
   us    ●     ●       –       ●     ●      ●     en-US         fields built
   jp    ●     ●       ●       ●     ●      ●     ja            fields built  ← target
-  de    ●     ●       ·       ·     ·      ·     ·             in progress (2/7)  ← target
+  de    ●     ●       ●       ●     ●      ●     ·             researched  ← target
   br    ·     ·       ·       ·     ·      ·     ·             NOT STARTED  ← target
 ```
 

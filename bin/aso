@@ -188,7 +188,7 @@ def cmd_rank(a):
             flag='  ⚠ TRAP? top-5: '+', '.join(r['top5'][:3])
         tier='🟢' if r['owners']==0 else ('🟡' if r['owners']<=2 else '🔴')
         print(f"{r['score']:>6} {r['pop']:>4} {r['diff']:>5} {tier}{r['owners']:>2}  {r['term']}{flag}")
-    print(f"\n  → rank_{s}.json   next: aso propose {a.slug} --store {s} --locale {loc}")
+    print(f"\n  → rank_{s}.json   next: the next store, or — once every store is ranked — aso fill {a.slug} --store {s} --locale {loc}")
 
 def cmd_check(a):
     """Validate a proposed title/subtitle/keywords against every hard rule."""
@@ -607,6 +607,7 @@ def cmd_status(a):
         n=sum(done.values())
         if not any(done.values()) and st not in touched: state='NOT STARTED'
         elif done['fill']: state='fields built'
+        elif done['rank']: state='researched'
         else: state=f'in progress ({n}/{len(STAGES)})'
         if state!='fields built': todo.append((st,state))
         cell=lambda k: ('–' if (k=='localwinners' and st=='us') else '●' if done[k] else '·')
@@ -616,6 +617,8 @@ def cmd_status(a):
               f"{cell('mine'):<6}{cell('related'):<7}{cell('rank'):<6}{fills_s:<14}{state}{tag}")
     if todo:
         print(f"\n  still open: "+', '.join(f"{s} ({st})" for s,st in todo))
+        if all(st=='researched' for _,st in todo):
+            print("  every store is researched and none is built → naming checkpoint, then fill all")
     else:
         print("\n  every listed store has fields built")
 
